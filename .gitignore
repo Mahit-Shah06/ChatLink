@@ -1,0 +1,47 @@
+# ----- SECURITY CRITICAL -----
+
+# All secrets
+.env
+
+# Encrypted & stored API keys
+apikeys.json
+
+# Sessions
+sessions.json
+
+# Per-channel memory files
+memory/
+
+# ----- PYTHON STUFF -----
+
+# Virtual environment
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build / packaging (not needed)
+build/
+dist/
+*.egg-info/
+
+# ----- OS JUNK -----
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# ----- IDE FILES -----
+
+# VSCode
+.vscode/
+
+# PyCharm / JetBrains
+.idea/
