@@ -7,6 +7,8 @@ from encrypting_utils import crypting
 from datetime import datetime
 from openai_wrapper import AI
 from memory_utils import Memory
+from secretSantaMemory import MemAcc
+import random
 
 load_dotenv()
 
@@ -15,6 +17,7 @@ SESSION_ROLE_ID = int(os.getenv("SESSION_ROLE_ID"))
 crypto = crypting()
 ai = AI()
 memory_handler = Memory()
+ssm = MemAcc()
 
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 
@@ -51,6 +54,8 @@ def save_api_key(user_id, encrypted_key):
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def purge(ctx, count: int = 1):
+    if count>50:
+        count = 50
     await ctx.channel.purge(limit=count + 1)
 
 # ---------- API ----------
@@ -69,7 +74,8 @@ class APIKeyModal(ui.Modal, title="Enter Your OpenAI API Key"):
 
         await interaction.response.send_message(
             "🔐 Your API key has been **securely encrypted and stored**.",
-            ephemeral=True
+            ephemeral=True,
+            delete_after=5
         )
 
 class APIKeyView(ui.View):
@@ -188,7 +194,8 @@ class CreateView(ui.View):
 
         await interaction.response.send_message(
             f"🧠 Your private ChatLink session has been created: {channel.mention}",
-            ephemeral=True
+            ephemeral=True,
+            delete_after=5
         )
 
 # ---------- ON MESSAGE ----------
@@ -314,7 +321,7 @@ async def gp(ctx, member: discord.Member):
 
     # Owner check
     if not is_session_owner(ctx.author.id, channel.id):
-        return await ctx.reply("❌ Only the **session owner** can grant access.", delete_after=5)
+        return await ctx.reply("❌ Only the **session owner** can grant access.")
 
     overwrites = channel.overwrites_for(member)
     overwrites.view_channel = True
@@ -323,7 +330,7 @@ async def gp(ctx, member: discord.Member):
 
     await channel.set_permissions(member, overwrite=overwrites)
 
-    await ctx.reply(f"✅ {member.mention} has been **granted access**.", delete_after=5)
+    await ctx.reply(f"✅ {member.mention} has been **granted access**.")    
 
 #rp command
 @bot.command()
@@ -332,11 +339,11 @@ async def rp(ctx, member: discord.Member):
 
     # Owner check
     if not is_session_owner(ctx.author.id, channel.id):
-        return await ctx.reply("❌ Only the **session owner** can revoke access.", delete_after=5)
+        return await ctx.reply("❌ Only the **session owner** can revoke access.")
 
     await channel.set_permissions(member, overwrite=None)
 
-    await ctx.reply(f"🗑️ {member.mention}'s access has been **revoked**.", delete_after=5)
+    await ctx.reply(f"🗑️ {member.mention}'s access has been **revoked**.")
 
 #rp all command
 @bot.command()
@@ -352,6 +359,87 @@ async def rpall(ctx):
         if isinstance(member, discord.Member) and member != author:
             await channel.set_permissions(member, overwrite=None)
 
-    await ctx.reply("🚫 All access has been **revoked** (except yours).", delete_after=5)
+    await ctx.reply("🚫 All access has been **revoked** (except yours).")
+
+#ssadd command
+@bot.command()
+async def ssadd(ctx, member: discord.Member = None):
+    if member is None:
+        member = ctx.author
+    if ssm.add_member(member):
+        await ctx.reply(f"✅ {member.mention} has been **added to the group**.")   
+    else:
+        return await ctx.reply(""f"⚠️ {member.mention} is already added.")
+
+#ss members name
+@bot.command()
+async def ssmems(ctx):
+    entries = ssm.get_entries()
+
+    if not entries:
+        return await ctx.reply("🎄 No participants added yet.")
+
+    msg = "\n".join([f"• {name}" for _, name in entries])
+    await ctx.reply(f"🎁 **Participants ({len(entries)}):**\n{msg}")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def ssbegin(ctx):
+    entries = ssm.get_entries()
+
+    if len(entries) < 2:
+        return await ctx.reply("❌ Need at least **2 participants** to start Secret Santa.")
+
+    ids = [uid for uid, _ in entries]
+    names = {uid: name for uid, name in entries}
+
+    shuffled = ids[:]
+
+    # Derangement (no self-assignment)
+    while True:
+        random.shuffle(shuffled)
+        if all(a != b for a, b in zip(ids, shuffled)):
+            break
+
+    failed = []
+
+    for giver_id, receiver_id in zip(ids, shuffled):
+        try:
+            user = await bot.fetch_user(giver_id)
+            receiver_name = names[receiver_id]
+
+            await user.send(
+                f"🎅 **Secret Santa Assignment** 🎁\n"
+                f"You are the Secret Santa for **{receiver_name}**!\n\n"
+                f"🤫 Don’t tell anyone."
+            )
+
+        except Exception:
+            failed.append(names[giver_id])
+
+    # OPTIONAL: store results (plain text)
+    with open("SSresults.txt", "w") as f:
+        for giver, receiver in zip(ids, shuffled):
+            f.write(f"{names[giver]} -> {names[receiver]}\n")
+
+    if failed:
+        await ctx.reply(
+            f"🎄 Secret Santa started!\n"
+            f"⚠️ Could not DM: {', '.join(failed)}"
+        )
+    else:
+        await ctx.reply("🎄 **Secret Santa started successfully!** All DMs sent.")
+
+@bot.command()
+@commands.has_permissions(administrator=True)
+async def ssremoveall(ctx):
+    ssm.clear()
+    await ctx.reply("🗑️ **All Secret Santa participants have been removed.**")
+
+@bot.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.reply("❌ Invalid command. Use `!help` to see available commands.")
+        return
 
 bot.run(os.getenv("DISCORD_TOKEN"))

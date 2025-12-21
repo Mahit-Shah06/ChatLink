@@ -9,6 +9,10 @@ apikeys.json
 # Sessions
 sessions.json
 
+# SecretSanta files
+SSmemory.txt
+SSresults.txt
+
 # Per-channel memory files
 memory/
 
