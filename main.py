@@ -369,6 +369,7 @@ async def ssadd(ctx, member: discord.Member = None):
     if ssm.add_member(member):
         await ctx.reply(f"✅ {member.mention} has been **added to the group**.")   
     else:
+        print(member)
         return await ctx.reply(""f"⚠️ {member.mention} is already added.")
 
 #ss members name
@@ -382,6 +383,7 @@ async def ssmems(ctx):
     msg = "\n".join([f"• {name}" for _, name in entries])
     await ctx.reply(f"🎁 **Participants ({len(entries)}):**\n{msg}")
 
+#begin secret santa
 @bot.command()
 @commands.has_permissions(administrator=True)
 async def ssbegin(ctx):
@@ -395,7 +397,6 @@ async def ssbegin(ctx):
 
     shuffled = ids[:]
 
-    # Derangement (no self-assignment)
     while True:
         random.shuffle(shuffled)
         if all(a != b for a, b in zip(ids, shuffled)):
@@ -409,7 +410,9 @@ async def ssbegin(ctx):
             receiver_name = names[receiver_id]
 
             await user.send(
-                f"🎅 **Secret Santa Assignment** 🎁\n"
+                f"🎅 **FINAL Secret Santa Assignment** 🎁\n"
+                f"⚠️ Please ignore the previous Secret Santa message. It was sent in error.\n"
+                f"There will be no changes after you have recieved this name\n"
                 f"You are the Secret Santa for **{receiver_name}**!\n\n"
                 f"🤫 Don’t tell anyone."
             )
@@ -417,7 +420,6 @@ async def ssbegin(ctx):
         except Exception:
             failed.append(names[giver_id])
 
-    # OPTIONAL: store results (plain text)
     with open("SSresults.txt", "w") as f:
         for giver, receiver in zip(ids, shuffled):
             f.write(f"{names[giver]} -> {names[receiver]}\n")

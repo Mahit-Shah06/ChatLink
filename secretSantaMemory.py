@@ -27,6 +27,8 @@ class MemAcc:
 
         with open(self.FILE, "a") as f:
             f.write(f"{member.id}|{member.name}\n")
+        
+        return True
 
     def clear(self):
         with open(self.FILE, "w") as f:
