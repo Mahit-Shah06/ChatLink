@@ -16,6 +16,9 @@ SSresults.txt
 # Per-channel memory files
 memory/
 
+#All storage files
+storage/
+
 # ----- PYTHON STUFF -----
 
 # Virtual environment
