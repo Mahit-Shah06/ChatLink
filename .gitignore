@@ -33,15 +33,6 @@ build/
 dist/
 *.egg-info/
 
-# ----- OS JUNK -----
-
-# macOS
-.DS_Store
-
-# Windows
-Thumbs.db
-desktop.ini
-
 # ----- IDE FILES -----
 
 # VSCode

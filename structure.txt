@@ -1,0 +1,25 @@
+ChatLink/
+├── main.py              # ONLY bot startup & wiring
+│
+├── bot/
+│   ├── events.py        # on_message, on_command_error
+│   ├── admin.py         # purge, capi, cb
+│   ├── sessions.py      # create/delete/gp/rp logic
+│
+├── ai/
+│   └── chat.py          # AI response handling
+│
+├── security/
+│   ├── encryption.py    # encrypting_utils
+│   └── apikeys.py       # save/load API keys
+│
+├── memory/
+│   ├── handler.py       # memory_utils
+│   └── storage/         # JSON files
+│
+├── features/
+│   └── secret_santa.py  # ALL SS logic (no exceptions)
+│
+├── config/
+│   └── settings.py      # env vars, role IDs
+
