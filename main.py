@@ -3,11 +3,11 @@ from discord.ext import commands
 from discord import ui
 import json, os
 from dotenv import load_dotenv
-from encrypting_utils import crypting
+from security.encrypting_utils import crypting
 from datetime import datetime
-from openai_wrapper import AI
-from memory_utils import Memory
-from secretSantaMemory import MemAcc
+from ai.openai_wrapper import AI
+from memory.cm_utils import Memory
+from memory.ssm_utils import MemAcc
 import random
 
 load_dotenv()

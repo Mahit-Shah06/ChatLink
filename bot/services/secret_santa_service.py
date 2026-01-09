@@ -1,9 +1,9 @@
 import random
-from memory.ssm_utils import MemAcc
+from memory.ssm_utils import SecretSantaMemory
 
 class SecretSantaService:
     def __init__(self):
-        self.ssm = MemAcc()
+        self.ssm = SecretSantaMemory()
 
     def add_member(self, member):
         return self.ssm.add_member(member)
