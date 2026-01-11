@@ -1,33 +1,24 @@
 import discord
-from discord import ui
 from bot.services.api_key_service import APIKeyService
 
-api_keys = APIKeyService()
+keys = APIKeyService()
 
+class APIKeyModal(discord.ui.Modal):
+    def __init__(self, provider):
+        super().__init__(title=f"Add {provider} API Key")
+        self.provider = provider
+        self.key = discord.ui.TextInput(label="API Key", style=discord.TextStyle.long)
+        self.add_item(self.key)
 
-class APIKeyModal(ui.Modal, title="Enter Your OpenAI API Key"):
+    async def on_submit(self, interaction):
+        keys.save_key(interaction.user.id, self.provider, self.key.value)
+        await interaction.response.send_message("✅ Saved", ephemeral=True)
 
-    api_key = ui.TextInput(
-        label="OpenAI API Key",
-        placeholder="sk-xxxxxxxxxxxxxxxxx",
-        style=discord.TextStyle.short,
-        required=True,
-    )
+class APIKeyView(discord.ui.View):
+    @discord.ui.button(label="OpenAI", style=discord.ButtonStyle.primary)
+    async def openai(self, i, _):
+        await i.response.send_modal(APIKeyModal("openai"))
 
-    async def on_submit(self, interaction: discord.Interaction):
-        api_keys.save_key(interaction.user.id, self.api_key.value)
-
-        await interaction.response.send_message(
-            "🔐 Your API key has been securely saved.",
-            ephemeral=True,
-            delete_after=5
-        )
-
-
-class APIKeyView(ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @ui.button(label="Enter API Key", style=discord.ButtonStyle.primary)
-    async def enter_key(self, interaction: discord.Interaction, button: ui.Button):
-        await interaction.response.send_modal(APIKeyModal())
+    @discord.ui.button(label="Gemini", style=discord.ButtonStyle.success)
+    async def gemini(self, i, _):
+        await i.response.send_modal(APIKeyModal("gemini"))
