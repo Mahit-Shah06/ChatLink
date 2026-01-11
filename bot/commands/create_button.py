@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from ui.create_button_ui import CreateView
+from bot.ui.create_button_ui import CreateView
 
 class CreateButton(commands.Cog):
     def __init__(self, bot):
@@ -9,6 +9,7 @@ class CreateButton(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def cb(self, ctx):
+        await ctx.channel.purge(limit=1)
         embed = discord.Embed(
             title="Start Chat",
             description="Click the button below to create a private ChatGPT session",

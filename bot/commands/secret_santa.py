@@ -4,7 +4,7 @@ from bot.services.secret_santa_service import SecretSantaService
 
 ss = SecretSantaService()
 
-def setup(bot):
+async def setup(bot: commands.bot):
 
     @bot.command()
     async def ssadd(ctx, member: discord.Member = None):

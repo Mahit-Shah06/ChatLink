@@ -24,7 +24,7 @@ class Help(commands.Cog):
         embed.add_field(name="Admin", value=
             "`!purge n` delete messages", inline=False)
 
-        embed.add_field(name="Fun", value=
+        embed.add_field(name="Secret Santa", value=
             "`!ssadd`, `!ssbegin`, `!ssmems`, `!ssremoveall`", inline=False)
 
         await ctx.send(embed=embed)

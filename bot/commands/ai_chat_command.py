@@ -17,3 +17,6 @@ class AIChatCommand(commands.Cog):
             await ctx.reply(reply)
         except Exception as e:
             await ctx.reply("❌ AI failed. Skill issue.")
+
+async def setup(bot):
+    await bot.add_cog(AIChatCommand(bot))
