@@ -1,6 +1,6 @@
 from ai.openai_wrapper import AIWrapper
 from memory.cm_utils import Memory
-from bot.services.api_key_service import APIKeyService
+from memory.api_key_service import APIKeyService
 
 class AIChatService:
     def __init__(self):

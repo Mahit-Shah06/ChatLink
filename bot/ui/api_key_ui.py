@@ -1,5 +1,5 @@
 import discord
-from bot.services.api_key_service import APIKeyService
+from memory.api_key_service import APIKeyService
 
 keys = APIKeyService()
 
