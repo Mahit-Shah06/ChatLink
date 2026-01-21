@@ -1,46 +1,15 @@
 import discord
 from discord.ext import commands
-from discord import ui
-
-
-class JoinCallView(ui.View):
-    def __init__(self, guild_id: int, channel_id: int):
-        super().__init__(timeout=120)
-        self.guild_id = guild_id
-        self.channel_id = channel_id
-
-    @ui.button(label="📞 Join Call", style=discord.ButtonStyle.success)
-    async def join_call(self, interaction: discord.Interaction, button: ui.Button):
-        guild = interaction.client.get_guild(self.guild_id)
-        if not guild:
-            return await interaction.response.send_message(
-                "❌ Server not found.", ephemeral=True
-            )
-
-        channel = guild.get_channel(self.channel_id)
-        if not channel or not isinstance(channel, discord.VoiceChannel):
-            return await interaction.response.send_message(
-                "❌ Voice channel no longer exists.", ephemeral=True
-            )
-
-        if not interaction.user.voice:
-            await interaction.response.send_message(
-                "⚠️ You must join a voice channel first.", ephemeral=True
-            )
-            return
-
-        await interaction.user.move_to(channel)
-        await interaction.response.send_message(
-            f"✅ Joined **{channel.name}**", ephemeral=True
-        )
+from bot.ui.caller_ui import JoinCallView
 
 
 class Caller(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot):
         self.bot = bot
 
     @commands.command(name="ring")
-    async def ring(self, ctx: commands.Context, member: discord.Member):
+    async def ring(self, ctx, member: discord.Member):
+        # Caller must be in a voice channel
         if not ctx.author.voice or not ctx.author.voice.channel:
             return await ctx.reply(
                 "❌ You must be in a voice channel to ring someone.",
@@ -49,6 +18,13 @@ class Caller(commands.Cog):
 
         voice_channel = ctx.author.voice.channel
 
+        # Cannot ring yourself
+        if member.id == ctx.author.id:
+            return await ctx.reply(
+                "❌ You cannot ring yourself.",
+                delete_after=5
+            )
+
         view = JoinCallView(
             guild_id=ctx.guild.id,
             channel_id=voice_channel.id
@@ -56,15 +32,24 @@ class Caller(commands.Cog):
 
         try:
             await member.send(
-                f"📞 **Incoming Call**\n"
-                f"Server: **{ctx.guild.name}**\n"
-                f"Channel: **{voice_channel.name}**",
+                embed=discord.Embed(
+                    title="📞 Incoming Call",
+                    description=(
+                        f"**{ctx.author.display_name}** is calling you.\n\n"
+                        f"Server: **{ctx.guild.name}**\n"
+                        f"Channel: **{voice_channel.name}**"
+                    ),
+                    color=0x00ff99
+                ),
                 view=view
             )
-            await ctx.reply(f"📨 Ringed {member.mention}")
+            await ctx.reply(f"📨 Ring sent to **{member.display_name}**.")
         except discord.Forbidden:
-            await ctx.reply("❌ User has DMs closed.")
+            await ctx.reply(
+                "❌ Cannot DM this user (DMs closed).",
+                delete_after=5
+            )
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot):
     await bot.add_cog(Caller(bot))
