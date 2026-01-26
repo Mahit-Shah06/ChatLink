@@ -24,6 +24,7 @@ EXTENSIONS = [
     "bot.commands.ai_chat_command",
     "bot.commands.secret_santa",
     "bot.commands.caller",
+    "bot.commands.extractor",
 ]
 
 @bot.event
