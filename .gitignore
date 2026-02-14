@@ -13,9 +13,6 @@ sessions.json
 SSmemory.txt
 SSresults.txt
 
-# Per-channel memory files
-memory/
-
 #All storage files
 storage/
 

@@ -25,6 +25,7 @@ EXTENSIONS = [
     "bot.commands.secret_santa",
     "bot.commands.caller",
     "bot.commands.extractor",
+    "bot.commands.retard",
 ]
 
 @bot.event

@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 from bot.ui.caller_ui import JoinCallView
 
-
 class Caller(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
