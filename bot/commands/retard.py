@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-class API(commands.Cog):
+class Retard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
@@ -10,4 +10,4 @@ class API(commands.Cog):
         await ctx.send(f"**{member.display_name}** you are a retard.")
 
 async def setup(bot):
-    await bot.add_cog(API(bot))
+    await bot.add_cog(Retard(bot))
