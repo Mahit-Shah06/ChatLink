@@ -5,7 +5,6 @@ CHANNEL_MAP = {
     LogType.COMMAND: "command-logs",
     LogType.VOICE: "voice-logs",
     LogType.MEMBER: "member-logs",
-    LogType.ADMIN: "admin-logs",
     LogType.ERROR: "error-logs",
 }
 

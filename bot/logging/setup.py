@@ -8,7 +8,7 @@ class LogType(Enum):
     VOICE = "voice"
     COMMAND = "commands"
     MEMBER = "members"
-    SYSTEM = "system"
+    ERROR = "errors"
 
 class Logger:
     def __init__(self, bot: discord.Client):

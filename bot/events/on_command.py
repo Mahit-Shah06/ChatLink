@@ -1,16 +1,26 @@
+import discord
 from discord.ext import commands
-from bot.logging.setup import Logger, LogType
+from bot.logging.log_types import LogType
+from bot.core.state_manager import state
 
-def setup(bot: commands.Bot):
-    logger = Logger(bot)
+class CommandLogger(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
 
-    @bot.event
-    async def on_command(ctx: commands.Context):
-        await logger.log(
-            guild=ctx.guild,
-            log_type=LogType.COMMAND,
-            title="Command Used",
-            user=ctx.author,
-            channel=ctx.channel,
-            description=f"Command: `{ctx.command}`"
-        )
+    @commands.Cog.listener()
+    async def on_command(self, ctx):
+        # Store command execution details in memory indexed by LogType.COMMAND
+        state.update(LogType.COMMAND, ctx.guild.id, {
+            "title": "💻 Command Executed",
+            "description": (
+                f"**User:** {ctx.author.mention} ({ctx.author.id})\n"
+                f"**Command:** `!{ctx.command.name}`\n"
+                f"**Channel:** {ctx.channel.mention}"
+            )
+        })
+        
+        # Signal logger using the Enum directly
+        await self.bot.logger.process_event(ctx.guild, LogType.COMMAND, ctx.guild.id)
+
+async def setup(bot):
+    await bot.add_cog(CommandLogger(bot))

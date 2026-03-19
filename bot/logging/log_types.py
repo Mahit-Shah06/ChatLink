@@ -5,5 +5,4 @@ class LogType(str, Enum):
     COMMAND = "command"
     VOICE = "voice"
     MEMBER = "member"
-    ADMIN = "admin"
     ERROR = "error"

@@ -28,8 +28,17 @@
 ### 1. Prerequisites
 * Python 3.11 or higher
 * A Discord Bot Token (from the [Discord Developer Portal](https://discord.com/developers/applications))
+* A MongoDB key
 
 ### 2. Clone the Repository
 ```bash
 git clone [https://github.com/mahit-shah06/chatlink.git](https://github.com/mahit-shah06/chatlink.git)
 cd chatlink
+python -m venv venv
+```
+### 3. Run it
+```bash
+source venv/bin/activate
+pip install -r requirements.txt
+python main.py
+```

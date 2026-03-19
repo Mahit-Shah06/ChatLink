@@ -3,6 +3,7 @@ python-dotenv>=1.0.0
 cryptography>=42.0.0
 aiofiles>=23.2.1
 pymongo>=3.12
+motor
 
 openai>=1.12.0
 google-generativeai>=0.4.1

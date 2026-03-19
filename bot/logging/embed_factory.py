@@ -7,15 +7,15 @@ COLORS = {
     LogType.COMMAND: discord.Color.green(),
     LogType.VOICE: discord.Color.purple(),
     LogType.MEMBER: discord.Color.orange(),
-    LogType.ADMIN: discord.Color.red(),
     LogType.ERROR: discord.Color.dark_red(),
 }
 
-def build_embed(title: str, description: str, log_type: LogType):
+def build_embed(title: str, description: str, log_type: LogType, tmstmp):
     embed = discord.Embed(
         title=title,
         description=description[:4000],
         color=COLORS.get(log_type, discord.Color.dark_grey()),
-        timestamp=datetime.utcnow()
+        timestamp=tmstmp
     )
+    embed.set_footer(text = "System Log")
     return embed

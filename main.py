@@ -2,6 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
+import asyncio
 
 load_dotenv()
 
@@ -14,17 +15,17 @@ bot = commands.Bot(
 )
 
 EXTENSIONS = [
-    "bot.events.on_message", # Now works because we added setup() above
-    "bot.events.logger",     # Added this here (Standard Cog loading)
+#   "bot.events.on_message",
+    "bot.logging.logger",
     "bot.commands.help",
     "bot.commands.admin_commands",
-    "bot.commands.session_commands",
-    "bot.commands.api_key_command",
-    "bot.commands.create_button",
-    "bot.commands.ai_chat_command",
+#   "bot.commands.session_commands",
+#   "bot.commands.api_key_command",
+#   "bot.commands.create_button",
+#   "bot.commands.ai_chat_command",
     "bot.commands.secret_santa",
     "bot.commands.caller",
-    "bot.commands.extractor",
+#   "bot.commands.extractor",
     "bot.commands.retard",
 ]
 
@@ -50,5 +51,4 @@ async def main():
         await bot.start(os.getenv("DISCORD_TOKEN"))
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
