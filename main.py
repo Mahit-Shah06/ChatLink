@@ -11,7 +11,8 @@ INTENTS = discord.Intents.all()
 bot = commands.Bot(
     command_prefix="!",
     intents=INTENTS,
-    help_command=None
+    help_command=None,
+    max_messages=10000
 )
 
 EXTENSIONS = [

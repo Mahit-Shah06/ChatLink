@@ -16,13 +16,13 @@ class StateManager:
         }
         self.log_channels: Dict[LogType, int] = {}
 
-    def update(self, category: str, key: int, data: Dict[str, Any]):
+    def update(self, category: LogType, key: int, data: Dict[str, Any]):
         self._states[category][key] = EventState(
                 data = data, 
                 timestamp = datetime.utcnow()
         )
 
-    def get_state(self, category: str, key: int):
+    def get_state(self, category: LogType, key: int):
         return self._states[category].get(key)
 
 state = StateManager()

@@ -7,7 +7,7 @@ class Retard(commands.Cog):
 
     @commands.command()
     async def retard(self, ctx, member: discord.Member):
-        await ctx.send(f"**{member.display_name}** you are a retard.")
+        await ctx.send(f"**{member.mention}** you are a retard.")
 
 async def setup(bot):
     await bot.add_cog(Retard(bot))

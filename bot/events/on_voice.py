@@ -8,14 +8,22 @@ class VoiceLogger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
-        if before.channel == after.channel: return
+        # Only log if the user actually switched channels, joined, or left
+        if before.channel == after.channel: 
+            return
         
+        # 1. Update the Memory
         state.update(LogType.VOICE, member.guild.id, {
             "title": "🔊 Voice Update",
-            "user": member,
-            "action": f"{'Joined' if after.channel else 'Left'} {after.channel or before.channel}"
+            "description": (
+                f"**User:** {member.mention}\n"
+                f"**Action:** {'Joined' if after.channel else 'Left'} "
+                f"{after.channel.name if after.channel else before.channel.name}"
+            )
         })
-        await self.bot.logger.process_event(member.guild, LogType.VOICE, member.guild.id)
+        
+        # 2. SIGNAL THE LOGGER (This was missing)
+        await self.bot.logger_instance.process_event(member.guild, LogType.VOICE, member.guild.id)
 
 async def setup(bot):
     await bot.add_cog(VoiceLogger(bot))

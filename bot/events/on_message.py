@@ -25,9 +25,11 @@ class MessageListeners(commands.Cog):
     async def on_message_delete(self, message):
         if message.author.bot: return
 
+        content = message.content if message.content else "Content not found (message too old)"
+
         state.update(LogType.MESSAGE, message.channel.id, {
             "title": "🗑️ Message Deleted",
-            "description": f"**User:** {message.author.mention}\n**Channel:** {message.channel.mention}\n**Content:** {message.content or 'No text'}",
+            "description": f"**User:** {message.author.mention}\n**Channel:** {message.channel.mention}\n**Content:** {content}",
         })
 
         await self.bot.logger_instance.process_event(message.guild, LogType.MESSAGE, message.channel.id)

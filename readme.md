@@ -36,9 +36,19 @@ git clone [https://github.com/mahit-shah06/chatlink.git](https://github.com/mahi
 cd chatlink
 python -m venv venv
 ```
-### 3. Run it
+### 3. Add env variables
+```
+nano .env
+```
+Add:
+* Discord Token
+* MongoDB TOken
+* Master key for encrypting/decrypting data
+* Role ID for AI seession (not mandatory)
+### 4. Run it
 ```bash
 source venv/bin/activate
 pip install -r requirements.txt
+python -m spacy download en_core_web_sm
 python main.py
 ```

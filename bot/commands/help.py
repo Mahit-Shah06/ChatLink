@@ -8,25 +8,46 @@ class Help(commands.Cog):
 
     @commands.command()
     async def help(self, ctx):
-        embed = discord.Embed(title="📖 Bot Commands", color=0x00ffaa)
+        embed = discord.Embed(
+            title="📖 ChatLink Bot Commands", 
+            description="Use `!` before every command. Some commands require Admin permissions.",
+            color=0x00ffaa
+        )
 
-        embed.add_field(name="Session", value=
-            "`!cb` create session\n"
-            "`!delete` delete session\n"
-            "`!gp @user` grant access\n"
-            "`!rp @user` revoke access\n"
-            "`!rpall` revoke all", inline=False)
+        # Productivity Tracker (New)
+        embed.add_field(name="📈 Productivity", value=
+            "`!tracker_start` - Initialize current channel for tracking\n"
+            "`!chart [@user]` - Show 7-day productivity trend\n"
+            "`!leaderboard` - Compare top performers\n"
+            "`!chart [start] [end]` - Custom range chart", inline=False)
 
-        embed.add_field(name="AI", value=
-            "`!capi` add API keys\n"
-            "Chat inside your session channel", inline=False)
+        # Logging System
+        embed.add_field(name="📜 Server Logging", value=
+            "`!setup_logs` - Create log category & channels\n"
+            "`!toggle_logs <type>` - Enable/Disable specific logs\n"
+            "`!logs` - Show logging help & available types", inline=False)
 
-        embed.add_field(name="Admin", value=
-            "`!purge n` delete messages", inline=False)
+        # Admin & Roles
+        embed.add_field(name="🛡️ Admin & Roles", value=
+            "`!purge [n]` - Delete last n messages\n"
+            "`!create_role [name]` - Create role & get ID\n"
+            "`!productivity_role [@role]` - Set the reminder role\n"
+            "`!lock` / `!unlock` - Lock current channel", inline=False)
 
-        embed.add_field(name="Secret Santa", value=
-            "`!ssadd`, `!ssbegin`, `!ssmems`, `!ssremoveall`", inline=False)
+        # Sessions (Legacy)
+        embed.add_field(name="📁 Session Management", value=
+            "`!cb` - Create private session\n"
+            "`!delete` - Delete current session\n"
+            "`!gp @user` - Grant access\n"
+            "`!rp @user` - Revoke access", inline=False)
 
+        # AI & Utils
+        embed.add_field(name="🤖 AI & Utils", value=
+            "`!capi` - Manage AI API keys\n"
+            "`!ssadd` / `!ssbegin` - Secret Santa commands\n"
+            "`!retard @user` - Fun command", inline=False)
+
+        embed.set_footer(text="ChatLink v2.0 | Ahmedabad, IN")
         await ctx.send(embed=embed)
 
 async def setup(bot):

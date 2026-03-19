@@ -9,11 +9,10 @@ class ErrorLogger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        # Ignore errors if the command doesn't exist to prevent spam
+        # Ignore non-existent commands to save space
         if isinstance(error, commands.CommandNotFound):
             return
 
-        # Store error details in memory indexed by LogType.ERROR
         state.update(LogType.ERROR, ctx.guild.id, {
             "title": "⚠️ Command Error",
             "description": (
@@ -23,8 +22,7 @@ class ErrorLogger(commands.Cog):
             )
         })
 
-        # Signal logger using the Enum directly
-        await self.bot.logger.process_event(ctx.guild, LogType.ERROR, ctx.guild.id)
+        await self.bot.logger_instance.process_event(ctx.guild, LogType.ERROR, ctx.guild.id)
 
 async def setup(bot):
     await bot.add_cog(ErrorLogger(bot))

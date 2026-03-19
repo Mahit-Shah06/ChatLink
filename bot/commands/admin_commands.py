@@ -113,6 +113,12 @@ class AdminCommands(commands.Cog):
         embed.add_field(name="Commands", value="`!setup_logs` - Initialize channels\n`!toggle_logs <TYPE>` - Enable/Disable", inline=False)
         await ctx.send(embed=embed)
 
+    # ---------- Create Role ----------
+    @commands.command()
+    @commands.has_permissions(administrator = True)
+    async def create_role(self, ctx, *, role_name: str):
+        role = await ctx.guild.create_role(name = role_name)
+        await ctx.send(f"✅ Created role **{role.name}**\n🆔 ID: `{role.id}`")
 
 async def setup(bot):
     await bot.add_cog(AdminCommands(bot))

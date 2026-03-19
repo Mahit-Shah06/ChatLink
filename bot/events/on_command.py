@@ -9,7 +9,7 @@ class CommandLogger(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command(self, ctx):
-        # Store command execution details in memory indexed by LogType.COMMAND
+        # Store command execution details in memory
         state.update(LogType.COMMAND, ctx.guild.id, {
             "title": "💻 Command Executed",
             "description": (
@@ -19,8 +19,8 @@ class CommandLogger(commands.Cog):
             )
         })
         
-        # Signal logger using the Enum directly
-        await self.bot.logger.process_event(ctx.guild, LogType.COMMAND, ctx.guild.id)
+        # Signal the logger instance
+        await self.bot.logger_instance.process_event(ctx.guild, LogType.COMMAND, ctx.guild.id)
 
 async def setup(bot):
     await bot.add_cog(CommandLogger(bot))

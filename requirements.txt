@@ -4,10 +4,20 @@ cryptography>=42.0.0
 aiofiles>=23.2.1
 pymongo>=3.12
 motor
+requests
 
+# Local NLP Productivity Tracker
+spacy>=3.7.0
+sumy>=0.11.0
+nltk>=3.8.1
+matplotlib>=3.8.0
+pandas
+
+# AI Wrappers (Keep if you still use them elsewhere)
 openai>=1.12.0
 google-generativeai>=0.4.1
 
+# Google Drive Integration
 google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
