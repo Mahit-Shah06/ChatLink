@@ -1,15 +1,11 @@
-import discord
-import os
 from discord.ext import tasks, commands
 from datetime import datetime
+import os
 
 class ProductivityTasks(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.daily_reminder.start()
-
-    def cog_unload(self):
-        self.daily_reminder.cancel()
+        self.daily_reminder.start() # Starts the "clock"
 
     @tasks.loop(minutes=1)
     async def daily_reminder(self):

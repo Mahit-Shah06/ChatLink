@@ -110,7 +110,7 @@ class ProductivityCommands(commands.Cog):
 
         set_key(".env", "PRODUCTIVITY_ROLE_ID", role_id)
 
-        os.envrion["PRODUCTIVITY_ROLE_ID"] = role_id
+        os.environ["PRODUCTIVITY_ROLE_ID"] = role_id
 
         await ctx.send(f"✅ Set {role.mention} (`{role_id}`) as the **Productivity Reminder Role**.")
 

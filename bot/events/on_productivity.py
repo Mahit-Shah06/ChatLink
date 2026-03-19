@@ -15,6 +15,9 @@ class ProductivityTracker(commands.Cog):
         if message.author.bot or not self.is_tracker_channel(message.channel.id):
             return
 
+        if message.content.startswith("!"): 
+            return
+
         await message.add_reaction("✅")
         await self.service.save_entry(message.author.id, message.content, "SENT")
 
