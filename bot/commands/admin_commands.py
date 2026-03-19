@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from bot.logging.log_types import LogType
 from bot.logging.channel_resolver import CHANNEL_MAP
+from bot.core.state_manager import state
 
 class AdminCommands(commands.Cog):
     def __init__(self, bot):
@@ -63,7 +64,11 @@ class AdminCommands(commands.Cog):
 
         overwrites = {
                 ctx.guild.default_role: discord.PermissionOverwrite(view_channel = False),
-                ctx.guild.me: discord.PermissionOverwrite(view_channel = True)
+                ctx.guild.me: discord.PermissionOverwrite(
+                    view_channel=True, 
+                    send_messages=True, 
+                    embed_links=True
+                )
         }
 
         for role in ctx.guild.roles:
@@ -79,19 +84,25 @@ class AdminCommands(commands.Cog):
             if not channel:
                 await ctx.guild.create_text_channel(channel_name, category = category)
 
+            state.log_channels[log_type] = channel.id
+
             await ctx.send("Logs Category created")
 
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def toggle_logs(self, ctx, log_type: LogType):
         """
-        Usage: !toggle_logs <MESSAGE|COMMAND|VOICE|MEMBER|ADMIN|ERROR>
-        Toggles a specific log type in memory.
+        Toggles a specific log type and returns the new status.
         """
-        # We pass the Enum object directly to the logger
-        new_state = self.bot.logger.toggle(log_type)
-        status = "ENABLED" if new_state else "DISABLED"
-        await ctx.send(f"✅ Log type `{log_type.name}` is now **{status}**.")
+        # Ensure we use the correct instance name 'logger_instance'
+        logger = self.bot.logger_instance
+        
+        # Update the toggle in memory
+        current_state = logger.toggles.get(log_type, True)
+        logger.toggles[log_type] = not current_state
+        
+        status = "ENABLED ✅" if not current_state else "DISABLED ❌"
+        await ctx.send(f"Log type `{log_type.name}` has been toggled to: **{status}**")
 
     @commands.group(invoke_without_command=True)
     async def logs(self, ctx):

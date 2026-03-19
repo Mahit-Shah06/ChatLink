@@ -5,7 +5,7 @@ from datetime import datetime
 from bot.logging.log_types import LogType
 
 @dataclass
-class EvenState:
+class EventState:
     data: Dict[str, Any]
     timestamp: datetime
 
@@ -14,9 +14,10 @@ class StateManager:
         self._states: Dict[LogType, Dict[int, EventState]] = {
             lt: {} for lt in LogType
         }
+        self.log_channels: Dict[LogType, int] = {}
 
     def update(self, category: str, key: int, data: Dict[str, Any]):
-        self._state[category][key] = EventState(
+        self._states[category][key] = EventState(
                 data = data, 
                 timestamp = datetime.utcnow()
         )

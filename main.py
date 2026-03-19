@@ -15,7 +15,11 @@ bot = commands.Bot(
 )
 
 EXTENSIONS = [
-#   "bot.events.on_message",
+    "bot.events.on_message",
+    "bot.events.on_member",
+    "bot.events.on_voice",
+    "bot.events.on_command",
+    "bot.events.on_error",
     "bot.logging.logger",
     "bot.commands.help",
     "bot.commands.admin_commands",
