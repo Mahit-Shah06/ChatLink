@@ -6,7 +6,7 @@ class API(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.hybrid_command()
     async def capi(self, ctx):
         await ctx.channel.purge(limit=1)
         embed = discord.Embed(

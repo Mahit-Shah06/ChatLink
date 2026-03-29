@@ -60,7 +60,7 @@ class Extractor(commands.Cog):
 
         return drive_link, None
 
-    @commands.command(name="extract")
+    @commands.hybrid_command(name="extract")
     async def extract(self, ctx, token: str = None):
         """
         Usage: !extract <session_token>

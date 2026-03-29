@@ -5,7 +5,7 @@ class Retard(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.hybrid_command()
     async def retard(self, ctx, member: discord.Member):
         await ctx.send(f"**{member.mention}** you are a retard.")
 

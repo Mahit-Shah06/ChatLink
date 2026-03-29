@@ -5,12 +5,17 @@ from sumy.nlp.tokenizers import Tokenizer
 from sumy.summarizers.lsa import LsaSummarizer
 from dateutil import parser as date_parser
 from datetime import datetime, timedelta
-from memory.mongoFile import db
+from memory.mongoFile import MONGO_AVAILABLE, async_db
+from memory.local_store import AsyncLocalCollection
 
 # Load lightweight English model
 # Remember to run: python -m spacy download en_core_web_sm
 nlp = spacy.load("en_core_web_sm")
-collection = db["productivity_logs"]
+
+if MONGO_AVAILABLE:
+    collection = async_db["productivity_logs"]
+else:
+    collection = AsyncLocalCollection("productivity_logs")
 
 class ProductivityService:
     def __init__(self):

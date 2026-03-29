@@ -6,7 +6,7 @@ class Help(commands.Cog):
         self.bot = bot
         bot.remove_command("help")
 
-    @commands.command()
+    @commands.hybrid_command()
     async def help(self, ctx):
         embed = discord.Embed(
             title="📖 ChatLink Bot Commands", 

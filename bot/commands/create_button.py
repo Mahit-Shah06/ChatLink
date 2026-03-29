@@ -6,7 +6,7 @@ class CreateButton(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.has_permissions(administrator=True)
     async def cb(self, ctx):
         await ctx.channel.purge(limit=1)

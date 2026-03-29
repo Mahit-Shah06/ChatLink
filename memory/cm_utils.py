@@ -1,7 +1,13 @@
-from memory.mongoFile import db
+from memory.mongoFile import MONGO_AVAILABLE, sync_db
+from memory.local_store import local_db
 
 MAX_MSGS = 20
-collection = db["memory"]
+
+if MONGO_AVAILABLE:
+    collection = sync_db["memory"]
+else:
+    collection = local_db["memory"]
+
 
 class Memory:
     def get_memory(self, channel_id: int):

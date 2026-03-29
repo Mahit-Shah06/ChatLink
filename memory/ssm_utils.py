@@ -1,15 +1,16 @@
-from memory.mongoFile import db
+from memory.mongoFile import MONGO_AVAILABLE, sync_db
+from memory.local_store import local_db
 
-collection = db["secret_santa"]
+if MONGO_AVAILABLE:
+    collection = sync_db["secret_santa"]
+else:
+    collection = local_db["secret_santa"]
+
 
 class SecretSantaMemory:
     def add_member(self, member):
-        existing = collection.find_one(
-            {"user_id": member.id}
-        )
-        if existing:
+        if collection.find_one({"user_id": member.id}):
             return False
-
         collection.insert_one({
             "user_id": member.id,
             "name": member.display_name

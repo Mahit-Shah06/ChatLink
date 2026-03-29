@@ -10,7 +10,7 @@ class ProductivityCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.hybrid_command()
     @commands.has_permissions(administrator=True)
     async def tracker_start(self, ctx):
         """Initializes the channel and sends the reminder signup button."""
@@ -28,7 +28,7 @@ class ProductivityCommands(commands.Cog):
         )
         await ctx.send(embed=embed, view=ProductivityRoleView())
 
-    @commands.command()
+    @commands.hybrid_command()
     async def chart(self, ctx, member: discord.Member = None, start: str = None, end: str = None):
         """Usage: !chart [@user] [start_date] [end_date]"""
         target = member or ctx.author
@@ -68,7 +68,7 @@ class ProductivityCommands(commands.Cog):
         file = discord.File(buf, filename="productivity_chart.png")
         await ctx.send(f"📊 **Productivity Trend for {target.mention}** ({start_dt.date()} to {end_dt.date()})", file=file)
 
-    @commands.command()
+    @commands.hybrid_command()
     async def leaderboard(self, ctx, start: str = None, end: str = None):
         """Usage: !leaderboard [start_date] [end_date]"""
         start_dt, end_dt = self.bot.productivity_service.parse_dates(start, end)
@@ -103,7 +103,7 @@ class ProductivityCommands(commands.Cog):
         await ctx.send(embed=embed)
 
     # ---------- Prouctivity Role ----------
-    @commands.command()
+    @commands.hybrid_command()
     @commands.has_permissions(administrator = True)
     async def productivity_role(self, ctx, role: discord.Role):
         role_id = str(role.id)

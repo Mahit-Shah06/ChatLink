@@ -13,21 +13,21 @@ class SessionPerms(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command()
+    @commands.hybrid_command()
     async def gp(self, ctx, member: discord.Member):
         if not is_owner(ctx.author.id, ctx.channel.id):
             return await ctx.reply("❌ Only the session owner can grant access.")
         await ctx.channel.set_permissions(member, view_channel=True, send_messages=True)
         await ctx.reply(f"✅ {member.mention} granted access.")
 
-    @commands.command()
+    @commands.hybrid_command()
     async def rp(self, ctx, member: discord.Member):
         if not is_owner(ctx.author.id, ctx.channel.id):
             return await ctx.reply("❌ Only the session owner can revoke access.")
         await ctx.channel.set_permissions(member, overwrite=None)
         await ctx.reply(f"🗑️ {member.mention} access revoked.")
 
-    @commands.command()
+    @commands.hybrid_command()
     async def rpall(self, ctx):
         if not is_owner(ctx.author.id, ctx.channel.id):
             return await ctx.reply("❌ Only the session owner.")
@@ -36,7 +36,7 @@ class SessionPerms(commands.Cog):
                 await ctx.channel.set_permissions(m, overwrite=None)
         await ctx.reply("🚫 Everyone removed except you.")
 
-    @commands.command()
+    @commands.hybrid_command()
     async def delete(self, ctx):
         if not is_owner(ctx.author.id, ctx.channel.id):
             return await ctx.reply("❌ Not your session.")

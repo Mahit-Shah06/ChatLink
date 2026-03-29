@@ -6,7 +6,7 @@ class Caller(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(name="ring")
+    @commands.hybrid_command(name="ring")
     async def ring(self, ctx, member: discord.Member):
         # Caller must be in a voice channel
         if not ctx.author.voice or not ctx.author.voice.channel:

@@ -7,7 +7,7 @@ class AIChatCommand(commands.Cog):
         self.bot = bot
         self.ai = AIChatService()
 
-    @commands.command(name="ai")
+    @commands.hybrid_command(name="ai")
     async def ai(self, ctx: commands.Context, *, message: str = None):
         if not message:
             return await ctx.reply("Talk to me. Don’t just stare.")

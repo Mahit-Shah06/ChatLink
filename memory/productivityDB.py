@@ -1,7 +1,12 @@
-from memory.mongoFile import db
+from memory.mongoFile import MONGO_AVAILABLE, async_db
+from memory.local_store import AsyncLocalCollection
 from datetime import datetime, timedelta
 
-collection = db["productivity_logs"]
+if MONGO_AVAILABLE:
+    collection = async_db["productivity_logs"]
+else:
+    collection = AsyncLocalCollection("productivity_logs")
+
 
 class ProductivityDB:
     async def add_log(self, user_id, content, score, summary):
@@ -10,7 +15,7 @@ class ProductivityDB:
             "content": content,
             "score": score,
             "summary": summary,
-            "timestamp": datetime.utcnow()
+            "timestamp": datetime.utcnow().isoformat()
         }
         await collection.insert_one(entry)
 
@@ -20,7 +25,7 @@ class ProductivityDB:
         if not start_date:
             start_date = end_date - timedelta(days=7)
 
-        query = {"timestamp": {"$gte": start_date, "$lte": end_date}}
+        query = {"timestamp": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}}
         if user_id:
             query["user_id"] = user_id
 
@@ -34,7 +39,7 @@ class ProductivityDB:
             start_date = end_date - timedelta(days=7)
 
         pipeline = [
-            {"$match": {"timestamp": {"$gte": start_date, "$lte": end_date}}},
+            {"$match": {"timestamp": {"$gte": start_date.isoformat(), "$lte": end_date.isoformat()}}},
             {"$group": {
                 "_id": "$user_id",
                 "avg_score": {"$avg": "$score"},
@@ -43,5 +48,6 @@ class ProductivityDB:
             {"$sort": {"avg_score": -1}}
         ]
         return await collection.aggregate(pipeline).to_list(length=20)
+
 
 productivity_db = ProductivityDB()
