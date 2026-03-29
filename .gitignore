@@ -2,6 +2,7 @@
 
 # All secrets
 .env
+.zip
 
 # Encrypted & stored API keys
 apikeys.json
