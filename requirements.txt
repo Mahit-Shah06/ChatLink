@@ -1,23 +1,25 @@
+# Core
 discord.py>=2.3.2
 python-dotenv>=1.0.0
 cryptography>=42.0.0
 aiofiles>=23.2.1
-pymongo>=3.12
-motor
 requests
 
-# Local NLP Productivity Tracker
+# Optional MongoDB backend. Without MONGO_URI set, ChatLink uses local JSON
+# storage and never imports these at connection time.
+pymongo>=3.12
+motor
+
+# Productivity tracker (retired in phase 2 of the learning engine).
+# spacy also needs: python -m spacy download en_core_web_sm
 spacy>=3.7.0
 sumy>=0.11.0
 nltk>=3.8.1
 matplotlib>=3.8.0
 pandas
+python-dateutil
 
-# AI Wrappers (Keep if you still use them elsewhere)
-openai>=1.12.0
-google-generativeai>=0.4.1
+# Learning engine — stdlib only, nothing to install.
 
-# Google Drive Integration
-google-api-python-client
-google-auth-httplib2
-google-auth-oauthlib
+# Dev
+pytest>=8.0.0

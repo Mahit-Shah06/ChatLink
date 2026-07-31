@@ -1,41 +1,65 @@
-import os
-import pymongo
-from motor.motor_asyncio import AsyncIOMotorClient
+"""
+MongoDB connection, with a local-first default.
 
-MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+The previous version opened a synchronous pymongo client at import time and
+pinged it with a 3 second timeout. When Mongo was unreachable — which is the
+normal case now that ChatLink runs locally — that was a guaranteed three second
+stall on every single boot, before the bot had even started connecting to
+Discord.
+
+Now: if MONGO_URI is not set, Mongo is simply off and nothing is attempted. If
+it is set, the probe runs with a short timeout. Either way the module-level
+names other code imports (MONGO_AVAILABLE, async_db, sync_db, db) keep working
+exactly as before.
+"""
+
+import logging
+import os
+
+logger = logging.getLogger("chatlink.mongo")
+
+MONGO_URI = os.getenv("MONGO_URI", "").strip()
+PROBE_TIMEOUT_MS = int(os.getenv("MONGO_PROBE_TIMEOUT_MS", "800"))
 
 MONGO_AVAILABLE = False
 sync_db = None
 async_db = None
-db = None  # Kept for legacy imports
+db = None  # kept for legacy imports
 
-try:
-    _test_client = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=3000)
-    _test_client.admin.command("ping")
-    _test_client.close()
 
-    _sync_client = pymongo.MongoClient(MONGO_URI)
-    sync_db = _sync_client["chatlink"]
+if not MONGO_URI:
+    logger.info("MONGO_URI not set — using local JSON storage")
+else:
+    try:
+        import pymongo
+        from motor.motor_asyncio import AsyncIOMotorClient
 
-    _async_client = AsyncIOMotorClient(MONGO_URI)
-    async_db = _async_client["chatlink"]
+        probe = pymongo.MongoClient(MONGO_URI, serverSelectionTimeoutMS=PROBE_TIMEOUT_MS)
+        probe.admin.command("ping")
+        probe.close()
 
-    db = async_db
-    MONGO_AVAILABLE = True
-    print("✅ MongoDB connected successfully")
+        _sync_client = pymongo.MongoClient(MONGO_URI)
+        sync_db = _sync_client["chatlink"]
 
-except Exception as e:
-    print(f"⚠️  MongoDB unavailable ({e})")
-    print("     → Falling back to local JSON storage")
-    MONGO_AVAILABLE = False
+        _async_client = AsyncIOMotorClient(MONGO_URI)
+        async_db = _async_client["chatlink"]
+
+        db = async_db
+        MONGO_AVAILABLE = True
+        logger.info("MongoDB connected")
+
+    except Exception as exc:
+        logger.warning("MongoDB unavailable (%s) — falling back to local JSON storage", exc)
+        MONGO_AVAILABLE = False
 
 
 async def ping_db():
     if not MONGO_AVAILABLE:
-        print("ℹ️  MongoDB is offline — using local storage")
-        return
+        logger.info("MongoDB is offline — using local storage")
+        return False
     try:
         await async_db.command("ping")
-        print("✅ MongoDB ping successful")
-    except Exception as e:
-        print(f"❌ MongoDB ping failed: {e}")
+        return True
+    except Exception as exc:
+        logger.error("MongoDB ping failed: %s", exc)
+        return False

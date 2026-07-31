@@ -47,3 +47,4 @@ data/learning/
 *.db
 *.db-wal
 *.db-shm
+micro
