@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "_comment": [
+    "This file is yours to edit. It drives three things:",
+    "  1. !learn setup   - creates the Discord categories and channels",
+    "  2. channel resolution - which channel means which subject",
+    "  3. phase 4 taxonomy - subject keys here should match taxonomy.json",
+    "",
+    "subject_key must be stable. Rename 'name' freely; never rename a key",
+    "once messages have been captured against it.",
+    "",
+    "'channel' is the Discord channel name. Omit it and the key is used with",
+    "underscores turned into hyphens."
+  ],
+
+  "semesters": [
+    {
+      "id": "sem3",
+      "name": "Semester 3",
+      "category": "SEMESTER 3",
+      "active": true,
+      "subjects": [
+        { "key": "computer_networks", "name": "Computer Networks", "channel": "computer-networks" },
+        { "key": "dbms",              "name": "Database Management Systems", "channel": "dbms" },
+        { "key": "coa",               "name": "Computer Organisation & Architecture", "channel": "coa" },
+        { "key": "discrete_maths",    "name": "Discrete Mathematics", "channel": "discrete-maths" }
+      ]
+    },
+    {
+      "id": "sem4",
+      "name": "Semester 4",
+      "category": "SEMESTER 4",
+      "active": false,
+      "subjects": [
+        { "key": "operating_systems", "name": "Operating Systems", "channel": "operating-systems" },
+        { "key": "toc",               "name": "Theory of Computation", "channel": "toc" },
+        { "key": "dsa",               "name": "Data Structures & Algorithms", "channel": "dsa" }
+      ]
+    }
+  ],
+
+  "exams": [
+    {
+      "id": "gate",
+      "name": "GATE",
+      "category": "GATE",
+      "active": true,
+      "channels": [
+        { "key": null, "name": "General prep",  "channel": "gate-prep" },
+        { "key": null, "name": "Previous years","channel": "gate-pyqs" },
+        { "key": "aptitude", "name": "Aptitude", "channel": "gate-aptitude" }
+      ]
+    }
+  ],
+
+  "reference": {
+    "category": "REFERENCE",
+    "channels": [
+      { "name": "Syllabus documents", "channel": "syllabus" },
+      { "name": "Textbooks and PDFs", "channel": "resources" }
+    ],
+    "_note": "Reference channels are created but NOT captured. Stable material lives here so it doesn't flood the analytics."
+  }
+}

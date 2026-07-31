@@ -1,0 +1,261 @@
+"""
+Phase 2 tests: capture, channel resolution, syllabus parsing.
+
+    python -m pytest tests/test_capture.py -q
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import pytest
+
+from learning.capture import CaptureEngine
+from learning.models import Attachment, ChannelContext, IncomingMessage
+from learning.syllabus import ChannelRegistry, Syllabus, infer_context, load_syllabus
+
+CN = ChannelContext(external_id="101", label="computer-networks", category="SEMESTER 3",
+                    context_kind="semester", context_value="sem3",
+                    subject_key="computer_networks", origin="syllabus")
+REF = ChannelContext(external_id="900", label="resources", category="REFERENCE",
+                     context_kind="reference", origin="syllabus")
+
+
+@pytest.fixture
+def engine(tmp_path):
+    return CaptureEngine(db_path=tmp_path / "cap.db", syllabus=Syllabus())
+
+
+def msg(text="the OSI model has seven layers", ext="m1", channel=CN, **kw):
+    return IncomingMessage(content=text, source="test", external_id=ext,
+                           author_id="7", author_name="raj", channel=channel, **kw)
+
+
+# --------------------------------------------------------------- attachments
+@pytest.mark.parametrize("filename,ctype,expected", [
+    ("notes.pdf", "application/pdf", "document"),
+    ("diagram.png", "image/png", "image"),
+    ("osi.JPEG", "", "image"),
+    ("lecture.mp3", "", "audio"),
+    ("demo.mp4", "video/mp4", "video"),
+    ("weird.xyz", "", "other"),
+])
+def test_attachment_kind_detection(filename, ctype, expected):
+    assert Attachment(filename=filename, content_type=ctype).kind == expected
+
+
+# ----------------------------------------------------------------- filtering
+def test_captures_a_normal_message(engine):
+    assert engine.capture(msg()) is not None
+
+
+@pytest.mark.parametrize("text", ["!help", "/start", ".ping", "?x", "ok", "", "  "])
+def test_filters_commands_and_noise(engine, text):
+    assert engine.capture(msg(text, ext="f1")) is None
+
+
+def test_captures_image_with_no_caption(engine):
+    """A diagram posted bare is still worth keeping."""
+    m = msg("", ext="img", attachments=[Attachment(filename="osi.png", content_type="image/png")])
+    assert engine.capture(m) is not None
+
+
+def test_reference_channels_are_never_captured(engine):
+    """Stable material shouldn't flood the analytics."""
+    assert engine.capture(msg("textbook chapter 3", ext="r1", channel=REF)) is None
+
+
+def test_disabled_channel_is_skipped(engine):
+    off = ChannelContext(external_id="5", label="x", enabled=False)
+    assert engine.capture(msg("real content here", ext="d1", channel=off)) is None
+
+
+# ------------------------------------------------------------------ storage
+def test_message_is_stored_with_context(engine):
+    engine.capture(msg("revised subnetting today"))
+    row = engine.repo.recent(1)[0]
+    assert row["channel_label"] == "computer-networks"
+    assert row["author_name"] == "raj"
+    assert row["local_hour"] is not None
+
+
+def test_recapture_is_idempotent(engine):
+    engine.capture(msg(ext="same"))
+    engine.capture(msg(ext="same"))
+    assert engine.repo.summary()["messages"] == 1
+
+
+def test_edit_updates_content_and_stamps_edited_at(engine):
+    engine.capture(msg("first version of the note", ext="e1"))
+    engine.capture(msg("second version of the note", ext="e1"))
+    row = engine.db.query_one("SELECT content, edited_at FROM messages")
+    assert row["content"] == "second version of the note"
+    assert row["edited_at"] is not None
+
+
+def test_reingesting_identical_content_does_not_mark_edited(engine):
+    engine.capture(msg("unchanged text", ext="e2"))
+    engine.capture(msg("unchanged text", ext="e2"))
+    assert engine.db.query_one("SELECT edited_at FROM messages")["edited_at"] is None
+
+
+def test_attachments_are_stored_and_typed(engine):
+    m = msg("unit 3 slides", ext="a1", attachments=[
+        Attachment(filename="unit3.pdf", content_type="application/pdf", size_bytes=900),
+        Attachment(filename="graph.png", content_type="image/png"),
+    ])
+    engine.capture(m)
+    kinds = {r["kind"] for r in engine.db.query("SELECT kind FROM attachments")}
+    assert kinds == {"document", "image"}
+    assert engine.repo.summary()["attachments"] == 2
+
+
+def test_reingest_replaces_attachments_without_duplicating(engine):
+    m = msg("slides", ext="a2", attachments=[Attachment(filename="a.pdf")])
+    engine.capture(m)
+    engine.capture(m)
+    assert engine.repo.summary()["attachments"] == 1
+
+
+def test_soft_delete_hides_message(engine):
+    engine.capture(msg(ext="del1"))
+    assert engine.forget("test", "del1") is True
+    assert engine.repo.summary()["messages"] == 0
+
+
+def test_search_finds_captured_text(engine):
+    engine.capture(msg("the sliding window protocol controls flow", ext="s1"))
+    engine.capture(msg("something entirely different", ext="s2"))
+    assert len(engine.repo.search("sliding")) == 1
+
+
+def test_daily_counts_group_by_local_date(engine):
+    base = datetime.now(timezone.utc)
+    for i in range(3):
+        engine.capture(msg(f"studied routing day {i}", ext=f"d{i}",
+                           created_at=base - timedelta(days=i)))
+    assert len(engine.repo.daily_counts()) == 3
+
+
+# ---------------------------------------------------------------- inference
+def test_category_supplies_semester_channel_supplies_subject():
+    ctx = infer_context("computer-networks", "SEMESTER 3")
+    assert ctx.context_kind == "semester"
+    assert ctx.context_value == "sem3"
+    assert ctx.subject_key == "computer_networks"
+
+
+def test_semester_in_channel_name_also_works():
+    ctx = infer_context("sem4-dbms", "")
+    assert ctx.context_value == "sem4"
+
+
+def test_exam_category_detected():
+    ctx = infer_context("gate-pyqs", "GATE")
+    assert ctx.context_kind == "exam" and ctx.context_value == "gate"
+
+
+def test_reference_channels_recognised():
+    assert infer_context("resources", "REFERENCE").context_kind == "reference"
+    assert infer_context("syllabus", "").context_kind == "reference"
+
+
+def test_unrelated_channels_are_ignored():
+    assert infer_context("general", "") is None
+    assert infer_context("memes", "OFF TOPIC") is None
+
+
+# ----------------------------------------------------------------- registry
+def test_explicit_mapping_beats_inference(tmp_path):
+    path = tmp_path / "channels.json"
+    path.write_text(json.dumps({"channels": [{
+        "id": "555", "label": "cn", "context_kind": "semester",
+        "context_value": "sem3", "subject_key": "computer_networks",
+        "enabled": True, "origin": "syllabus",
+    }]}))
+    reg = ChannelRegistry(map_path=path, syllabus=Syllabus())
+    # inference would read this as sem7; the explicit entry must win
+    ctx = reg.resolve("555", "sem7-something", "SEMESTER 7")
+    assert ctx.context_value == "sem3" and ctx.origin == "syllabus"
+
+
+def test_falls_back_to_inference_when_unmapped(tmp_path):
+    reg = ChannelRegistry(map_path=tmp_path / "none.json", syllabus=Syllabus())
+    ctx = reg.resolve("999", "dbms", "SEMESTER 3")
+    assert ctx is not None and ctx.origin == "inferred"
+
+
+def test_unknown_channel_is_ignored_by_default(tmp_path):
+    reg = ChannelRegistry(map_path=tmp_path / "none.json", syllabus=Syllabus())
+    assert reg.resolve("123", "random-chat", "SOCIAL") is None
+
+
+def test_watch_all_captures_everything(tmp_path):
+    reg = ChannelRegistry(map_path=tmp_path / "none.json", syllabus=Syllabus(), watch_all=True)
+    assert reg.resolve("123", "random-chat", "SOCIAL") is not None
+
+
+def test_registry_round_trips_through_disk(tmp_path):
+    path = tmp_path / "channels.json"
+    reg = ChannelRegistry(map_path=path, syllabus=Syllabus())
+    reg.register(CN)
+    assert ChannelRegistry(map_path=path, syllabus=Syllabus()).resolve("101").subject_key \
+        == "computer_networks"
+
+
+def test_corrupt_channel_map_does_not_crash(tmp_path):
+    path = tmp_path / "channels.json"
+    path.write_text("{ not json")
+    reg = ChannelRegistry(map_path=path, syllabus=Syllabus())
+    assert reg.all() == []
+
+
+# ----------------------------------------------------------------- syllabus
+def test_syllabus_parses_semesters_exams_and_reference(tmp_path):
+    path = tmp_path / "syllabus.json"
+    path.write_text(json.dumps({
+        "version": 1,
+        "semesters": [{
+            "id": "sem3", "name": "Semester 3", "category": "SEMESTER 3", "active": True,
+            "subjects": [{"key": "computer_networks", "name": "CN", "channel": "computer-networks"}],
+        }],
+        "exams": [{
+            "id": "gate", "category": "GATE", "active": True,
+            "channels": [{"name": "Prep", "channel": "gate-prep"}],
+        }],
+        "reference": {"category": "REFERENCE", "channels": [{"channel": "resources"}]},
+    }))
+    syl = load_syllabus(path)
+    assert len(syl.categories) == 3
+    assert syl.channel_count == 3
+    assert syl.find("computer-networks").context_value == "sem3"
+    assert syl.find("resources").context_kind == "reference"
+
+
+def test_inactive_semesters_are_skipped(tmp_path):
+    path = tmp_path / "syllabus.json"
+    path.write_text(json.dumps({"semesters": [
+        {"id": "sem3", "category": "S3", "active": True,
+         "subjects": [{"key": "a", "channel": "a"}]},
+        {"id": "sem4", "category": "S4", "active": False,
+         "subjects": [{"key": "b", "channel": "b"}]},
+    ]}))
+    assert load_syllabus(path).channel_count == 1
+
+
+def test_missing_syllabus_is_not_an_error(tmp_path):
+    assert load_syllabus(tmp_path / "nope.json").channel_count == 0
+
+
+def test_channel_name_derived_from_key_when_omitted(tmp_path):
+    path = tmp_path / "syllabus.json"
+    path.write_text(json.dumps({"semesters": [{
+        "id": "sem3", "category": "S3",
+        "subjects": [{"key": "computer_networks", "name": "CN"}],
+    }]}))
+    assert load_syllabus(path).find("computer-networks") is not None

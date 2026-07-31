@@ -31,6 +31,7 @@ INTENTS.reactions = True
 
 EXTENSIONS = [
     "bot.events.on_message",
+    "bot.events.on_learning",
     "bot.events.on_member",
     "bot.events.on_voice",
     "bot.events.on_command",
@@ -39,6 +40,7 @@ EXTENSIONS = [
     "bot.commands.help",
     "bot.commands.admin_commands",
     "bot.commands.logging_commands",
+    "bot.commands.learning_setup",
     "bot.commands.secret_santa",
     "bot.commands.caller",
     "bot.commands.retard",

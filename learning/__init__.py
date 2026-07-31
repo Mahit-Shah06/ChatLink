@@ -1,8 +1,11 @@
 """ChatLink Learning Engine.
 
-Passive study capture, classification and analytics. Discord is the interface;
-SQLite is the store. Nothing here depends on discord.py — the bot adapter lives
-in bot/events/ and talks to this package, not the other way round.
+Passive study capture. Discord is the interface; SQLite is the store.
+Nothing in this package imports discord.py — the adapter lives in bot/events/.
 """
 
-__version__ = "0.1.0"
+from .capture import CaptureEngine, get_engine
+from .models import Attachment, ChannelContext, IncomingMessage
+
+__version__ = "0.2.0"
+__all__ = ["CaptureEngine", "get_engine", "IncomingMessage", "ChannelContext", "Attachment"]
