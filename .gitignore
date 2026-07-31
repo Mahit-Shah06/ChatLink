@@ -41,3 +41,9 @@ dist/
 
 # PyCharm / JetBrains
 .idea/
+
+# Learning Engine
+data/learning/
+*.db
+*.db-wal
+*.db-shm
