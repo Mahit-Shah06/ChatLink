@@ -35,12 +35,10 @@ EXTENSIONS = [
     "bot.events.on_voice",
     "bot.events.on_command",
     "bot.events.on_error",
-    "bot.events.on_productivity",
     "bot.logging.logger",
-    "bot.commands.productivity",
-    "bot.core.productivity_tasks",
     "bot.commands.help",
     "bot.commands.admin_commands",
+    "bot.commands.logging_commands",
     "bot.commands.secret_santa",
     "bot.commands.caller",
     "bot.commands.retard",
@@ -57,24 +55,6 @@ class ChatLink(commands.Bot):
             # on_message_delete uses. 1k still covers any realistic delete window.
             max_messages=1000,
         )
-        self._productivity_service = None
-
-    @property
-    def productivity_service(self):
-        """Built on first use, not at startup.
-
-        ProductivityService imports spacy, pandas and sumy at module level and
-        loads an NLP model. That is several seconds of boot time paid on every
-        restart for something only !chart and !leaderboard touch. Deferring it
-        means the bot is online immediately and the cost lands on the first
-        person to run a chart.
-        """
-        if self._productivity_service is None:
-            log.info("loading productivity service (first use)")
-            from bot.services.productivity_service import ProductivityService
-
-            self._productivity_service = ProductivityService()
-        return self._productivity_service
 
     async def setup_hook(self):
         loaded, failed = 0, 0

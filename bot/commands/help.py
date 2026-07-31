@@ -9,14 +9,12 @@ log = logging.getLogger("chatlink.help")
 # class name — the list is presentation only, never a filter, so a new cog can
 # never go missing from help by being forgotten here.
 COG_META = {
-    "ProductivityCommands": ("📈", "Productivity", 10),
-    "LogSetup":             ("📜", "Server Logging", 20),
-    "Setup":                ("📜", "Server Logging", 20),
-    "AdminCommands":        ("🛡️", "Admin & Roles", 30),
-    "SecretSanta":          ("🎁", "Secret Santa", 40),
-    "Caller":               ("📞", "Voice", 50),
-    "Retard":               ("🎲", "Fun", 60),
-    "Help":                 ("❓", "Help", 99),
+    "ServerLogging": ("\U0001F4DC", "Server Logging", 20),
+    "AdminCommands": ("\U0001F6E1\uFE0F", "Moderation & Utility", 30),
+    "SecretSanta":   ("\U0001F381", "Secret Santa", 40),
+    "Caller":        ("\U0001F4DE", "Voice", 50),
+    "Retard":        ("\U0001F3B2", "Fun", 60),
+    "Help":          ("\u2753", "Help", 99),
 }
 DEFAULT_META = ("⚙️", "Other", 90)
 

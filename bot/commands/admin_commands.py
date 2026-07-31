@@ -1,23 +1,38 @@
+import logging
+
 import discord
 from discord.ext import commands
-from bot.logging.log_types import LogType
-from bot.logging.channel_resolver import CHANNEL_MAP
-from bot.core.state_manager import state
+
+log = logging.getLogger("chatlink.admin")
 
 
 class AdminCommands(commands.Cog):
+    """Moderation and server utilities.
+
+    The logging commands (!setup_logs, !toggle_logs, !logs) moved to
+    bot/commands/logging_commands.py. Same command names, different cog, so
+    help can group them sensibly instead of listing everything as "Admin".
+
+    Every command now has a docstring, because help is generated from them.
+    """
+
     def __init__(self, bot):
         self.bot = bot
 
+    # ------------------------------------------------------------ moderation
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def purge(self, ctx, count: int = 1):
-        count = min(count, 50)
-        await ctx.channel.purge(limit=count + 1)
+        """Delete the last N messages in this channel, up to 50."""
+        count = max(1, min(count, 50))
+        deleted = await ctx.channel.purge(limit=count + 1)
+        # +1 accounts for the command message itself
+        await ctx.send(f"🧹 Deleted {len(deleted) - 1} message(s).", delete_after=5)
 
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def lock(self, ctx):
+        """Stop everyone from sending messages in this channel."""
         overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
         overwrite.send_messages = False
         await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
@@ -26,6 +41,7 @@ class AdminCommands(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def unlock(self, ctx):
+        """Let everyone send messages in this channel again."""
         overwrite = ctx.channel.overwrites_for(ctx.guild.default_role)
         overwrite.send_messages = True
         await ctx.channel.set_permissions(ctx.guild.default_role, overwrite=overwrite)
@@ -34,89 +50,53 @@ class AdminCommands(commands.Cog):
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def announce(self, ctx, *, message: str):
-        embed = discord.Embed(title="📢 Announcement", description=message, color=0xffcc00)
+        """Post a message as a highlighted announcement embed."""
+        embed = discord.Embed(title="📢 Announcement", description=message, color=0xFFCC00)
+        embed.set_footer(text=f"Posted by {ctx.author.display_name}")
         await ctx.send(embed=embed)
 
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def setup_logs(self, ctx):
-        guild = ctx.guild
-        category_name = "SERVER LOGS"
-
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(view_channel=False),
-            guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True, embed_links=True)
-        }
-        for role in guild.roles:
-            if role.permissions.administrator:
-                overwrites[role] = discord.PermissionOverwrite(view_channel=True)
-
-        category = discord.utils.get(guild.categories, name=category_name)
-        if not category:
-            category = await guild.create_category(category_name, overwrites=overwrites)
-
-        created = []
-        for log_type, channel_name in CHANNEL_MAP.items():
-            channel = discord.utils.get(category.text_channels, name=channel_name)
-            if not channel:
-                channel = await guild.create_text_channel(channel_name, category=category)
-                created.append(channel_name)
-            state.set_log_channel(guild.id, log_type, channel.id)
-
-        summary = ", ".join(f"#{c}" for c in created) if created else "all already existed"
-        embed = discord.Embed(
-            title="✅ Logging Setup Complete",
-            description=f"**Guild:** {guild.name}\n**Channels:** {summary}",
-            color=discord.Color.green()
-        )
-        await ctx.send(embed=embed)
-
-    @commands.command()
-    @commands.has_permissions(administrator=True)
-    async def toggle_logs(self, ctx, log_type: str):
-        try:
-            lt = LogType[log_type.upper()]
-        except KeyError:
-            valid = ", ".join(t.name for t in LogType)
-            await ctx.send(f"❌ Unknown log type. Valid: `{valid}`")
-            return
-        new_state = state.toggle(ctx.guild.id, lt)
-        status = "ENABLED ✅" if new_state else "DISABLED ❌"
-        await ctx.send(f"Log type `{lt.name}` is now **{status}** for **{ctx.guild.name}**")
-
-    @commands.group(invoke_without_command=True)
-    async def logs(self, ctx):
-        types_status = []
-        for lt in LogType:
-            enabled = state.is_enabled(ctx.guild.id, lt)
-            types_status.append(f"{'✅' if enabled else '❌'} `{lt.name}`")
-        embed = discord.Embed(title="📜 Logging System", color=discord.Color.blue())
-        embed.add_field(name=f"Log Types — {ctx.guild.name}", value="\n".join(types_status), inline=False)
-        embed.add_field(name="Commands", value="`!setup_logs`\n`!toggle_logs <TYPE>`", inline=False)
-        await ctx.send(embed=embed)
-
+    # ----------------------------------------------------------------- roles
     @commands.command()
     @commands.has_permissions(administrator=True)
     async def create_role(self, ctx, *, role_name: str):
-        role = await ctx.guild.create_role(name=role_name)
-        await ctx.send(f"✅ Created role **{role.name}**\n🆔 ID: `{role.id}`")
+        """Create a new role with no permissions."""
+        existing = discord.utils.get(ctx.guild.roles, name=role_name)
+        if existing:
+            return await ctx.send(f"⚠️ **{role_name}** already exists (`{existing.id}`).")
+        try:
+            role = await ctx.guild.create_role(name=role_name)
+        except discord.Forbidden:
+            return await ctx.send("❌ I don't have permission to create roles.")
+        await ctx.send(f"✅ Created **{role.name}** — `{role.id}`")
 
-    @commands.hybrid_command(name="servericon", description="Get the server's icon")
+    # --------------------------------------------------------------- utility
+    @commands.hybrid_command(name="servericon")
     async def servericon(self, ctx):
+        """Show this server's icon at full size."""
         if not ctx.guild.icon:
-            await ctx.send("❌ This server doesn't have an icon set.")
-            return
-        embed = discord.Embed(title=f"{ctx.guild.name}'s Server Icon", color=discord.Color.blurple())
+            return await ctx.send("❌ This server has no icon set.")
+        embed = discord.Embed(
+            title=f"{ctx.guild.name}", color=discord.Color.blurple()
+        )
         embed.set_image(url=ctx.guild.icon.with_size(4096).url)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
+        embed.set_footer(
+            text=f"Requested by {ctx.author.display_name}",
+            icon_url=ctx.author.display_avatar.url,
+        )
         await ctx.send(embed=embed)
 
-    @commands.hybrid_command(name="pfp", description="Get a user's profile picture")
+    @commands.hybrid_command(name="pfp")
     async def pfp(self, ctx, user: discord.Member = None):
+        """Show someone's profile picture at full size."""
         user = user or ctx.author
-        embed = discord.Embed(title=f"{user.display_name}'s Profile Picture", color=discord.Color.blurple())
+        embed = discord.Embed(
+            title=f"{user.display_name}", color=discord.Color.blurple()
+        )
         embed.set_image(url=user.display_avatar.with_size(4096).url)
-        embed.set_footer(text=f"Requested by {ctx.author}", icon_url=ctx.author.display_avatar.url)
+        embed.set_footer(
+            text=f"Requested by {ctx.author.display_name}",
+            icon_url=ctx.author.display_avatar.url,
+        )
         await ctx.send(embed=embed)
 
 
