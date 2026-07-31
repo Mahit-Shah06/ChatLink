@@ -15,7 +15,7 @@ SSmemory.txt
 SSresults.txt
 
 #All storage files
-storage/
+/memory/storage/
 
 # ----- PYTHON STUFF -----
 
