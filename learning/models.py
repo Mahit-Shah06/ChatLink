@@ -92,3 +92,96 @@ class IncomingMessage:
     @property
     def is_empty(self) -> bool:
         return not (self.content or "").strip() and not self.attachments
+
+
+# ==========================================================================
+# Phase 3+ : classification and topic models
+# ==========================================================================
+
+from enum import Enum
+
+
+class Label(str, Enum):
+    """The seven buckets every captured message is sorted into."""
+
+    QUESTION = "question"
+    NOTE = "note"
+    IDEA = "idea"
+    PROGRESS = "progress"
+    REVISION = "revision"
+    RESOURCE = "resource"
+    RANDOM = "random"
+
+    @classmethod
+    def values(cls) -> List[str]:
+        return [m.value for m in cls]
+
+    @classmethod
+    def parse(cls, raw: str) -> "Label":
+        try:
+            return cls(str(raw).strip().lower())
+        except ValueError:
+            return cls.RANDOM
+
+
+#: Tie-break order when two labels score identically. More specific wins.
+LABEL_PRIORITY: List[Label] = [
+    Label.QUESTION, Label.REVISION, Label.PROGRESS,
+    Label.IDEA, Label.RESOURCE, Label.NOTE, Label.RANDOM,
+]
+
+
+class NodeKind(str, Enum):
+    SUBJECT = "subject"
+    TOPIC = "topic"
+    SUBTOPIC = "subtopic"
+    TAG = "tag"
+
+
+class Relation(str, Enum):
+    CONTAINS = "contains"        # taxonomy hierarchy
+    RELATED_TO = "related_to"    # declared in taxonomy
+    PREREQ_OF = "prereq_of"      # declared in taxonomy
+    CO_OCCURS = "co_occurs"      # learned from your own messages
+
+
+@dataclass
+class Classification:
+    """Output of any classifier — rules today, a model later."""
+
+    label: Label
+    confidence: float
+    scores: Dict[str, float] = field(default_factory=dict)
+    evidence: List[str] = field(default_factory=list)
+    secondary_label: Optional[Label] = None
+    classifier_name: str = "unknown"
+    classifier_version: str = "0"
+    label_source: str = "auto"      # auto | human | imported
+
+    @property
+    def needs_review(self) -> bool:
+        return self.confidence < 0.5 and self.label_source == "auto"
+
+
+@dataclass
+class TopicMatch:
+    """A taxonomy node a message was linked to."""
+
+    node_key: str
+    node_kind: NodeKind
+    name: str
+    confidence: float
+    matched_text: str = ""
+    subject_key: Optional[str] = None
+    parent_key: Optional[str] = None
+
+
+@dataclass
+class ProcessedMessage:
+    """Everything known about one message, ready to persist."""
+
+    message: IncomingMessage
+    classification: Optional[Classification] = None
+    topics: List[TopicMatch] = field(default_factory=list)
+    candidate_terms: List[str] = field(default_factory=list)
+    message_id: Optional[int] = None

@@ -216,33 +216,54 @@ def test_corrupt_channel_map_does_not_crash(tmp_path):
 
 
 # ----------------------------------------------------------------- syllabus
-def test_syllabus_parses_semesters_exams_and_reference(tmp_path):
+def test_syllabus_nests_exams_inside_the_semester_category(tmp_path):
+    """One category per semester: subjects and exam channels together."""
     path = tmp_path / "syllabus.json"
     path.write_text(json.dumps({
-        "version": 1,
+        "version": 2,
         "semesters": [{
-            "id": "sem3", "name": "Semester 3", "category": "SEMESTER 3", "active": True,
-            "subjects": [{"key": "computer_networks", "name": "CN", "channel": "computer-networks"}],
+            "id": "sem5", "name": "Semester 5", "category": "SEMESTER 5", "active": True,
+            "subjects": [{"key": "computer_networks", "name": "CN",
+                          "channel": "computer-networks", "syllabus": "Unit 1 - OSI model"}],
+            "exams": [{"key": None, "name": "Mid Sem 1", "channel": "midsem-1"},
+                      {"key": None, "name": "Final", "channel": "final-exam"}],
         }],
-        "exams": [{
-            "id": "gate", "category": "GATE", "active": True,
-            "channels": [{"name": "Prep", "channel": "gate-prep"}],
-        }],
-        "reference": {"category": "REFERENCE", "channels": [{"channel": "resources"}]},
     }))
     syl = load_syllabus(path)
-    assert len(syl.categories) == 3
+    assert len(syl.categories) == 1
     assert syl.channel_count == 3
-    assert syl.find("computer-networks").context_value == "sem3"
-    assert syl.find("resources").context_kind == "reference"
+    assert syl.find("midsem-1").context_value == "sem5"
+    assert syl.find("midsem-1").context_kind == "exam"
+    assert syl.find("computer-networks").syllabus_text.startswith("Unit 1")
+
+
+def test_top_level_exams_still_supported(tmp_path):
+    """Cross-semester exams (GATE etc) keep their own category."""
+    path = tmp_path / "syllabus.json"
+    path.write_text(json.dumps({
+        "semesters": [],
+        "exams": [{"id": "gate", "category": "GATE", "active": True,
+                   "channels": [{"name": "Prep", "channel": "gate-prep"}]}],
+    }))
+    syl = load_syllabus(path)
+    assert syl.find("gate-prep").context_value == "gate"
+
+
+def test_subjects_without_syllabus_text_are_fine(tmp_path):
+    path = tmp_path / "syllabus.json"
+    path.write_text(json.dumps({"semesters": [{
+        "id": "sem5", "category": "S5",
+        "subjects": [{"key": "dbms", "channel": "dbms"}],
+    }]}))
+    assert load_syllabus(path).find("dbms").syllabus_text == ""
 
 
 def test_inactive_semesters_are_skipped(tmp_path):
     path = tmp_path / "syllabus.json"
     path.write_text(json.dumps({"semesters": [
-        {"id": "sem3", "category": "S3", "active": True,
+        {"id": "sem5", "category": "S5", "active": True,
          "subjects": [{"key": "a", "channel": "a"}]},
-        {"id": "sem4", "category": "S4", "active": False,
+        {"id": "sem6", "category": "S6", "active": False,
          "subjects": [{"key": "b", "channel": "b"}]},
     ]}))
     assert load_syllabus(path).channel_count == 1
@@ -255,7 +276,163 @@ def test_missing_syllabus_is_not_an_error(tmp_path):
 def test_channel_name_derived_from_key_when_omitted(tmp_path):
     path = tmp_path / "syllabus.json"
     path.write_text(json.dumps({"semesters": [{
-        "id": "sem3", "category": "S3",
+        "id": "sem5", "category": "S5",
         "subjects": [{"key": "computer_networks", "name": "CN"}],
     }]}))
     assert load_syllabus(path).find("computer-networks") is not None
+
+
+# ==========================================================================
+# Phase 3/4 : classification and topic detection
+# ==========================================================================
+
+from learning.classifiers.rules import RuleBasedClassifier
+from learning.models import Label
+from learning.topics.matcher import TaxonomyTopicExtractor
+
+clf = RuleBasedClassifier()
+ext = TaxonomyTopicExtractor()
+
+
+def label_of(text, channel=None):
+    m = IncomingMessage(content=text, channel=channel or ChannelContext())
+    topics, _ = ext.extract(m)
+    return clf.classify(m, topics).label
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("why does TCP need a three way handshake?", Label.QUESTION),
+    ("what is the difference between apriori and fp growth", Label.QUESTION),
+    ("confused about how gini index differs from entropy", Label.QUESTION),
+    ("stuck on backpropagation math", Label.QUESTION),
+    ("the OSI model consists of 7 layers each handling one concern", Label.NOTE),
+    ("overfitting means the model memorises the training data", Label.NOTE),
+    ("groupby splits the dataframe then applies a function to each group", Label.NOTE),
+    ("HIRA means hazard identification and risk assessment", Label.NOTE),
+    ("what if I built a visualiser for decision trees", Label.IDEA),
+    ("thinking of making a dashboard for my notes", Label.IDEA),
+    ("solved 30 questions on routing protocols", Label.PROGRESS),
+    ("finished the whole clustering unit", Label.PROGRESS),
+    ("completed 15 numpy exercises", Label.PROGRESS),
+    ("revised subnetting again today", Label.REVISION),
+    ("went through gradient descent one more time", Label.REVISION),
+    ("revised the factories act provisions again", Label.REVISION),
+    ("https://youtube.com/playlist?list=x good pandas playlist", Label.RESOURCE),
+    ("lol same", Label.RANDOM),
+    ("bruh", Label.RANDOM),
+])
+def test_classification_accuracy(text, expected):
+    assert label_of(text) == expected
+
+
+def test_question_beats_resource():
+    assert label_of("should I use this playlist for ML? https://youtube.com/x") == Label.QUESTION
+
+
+def test_revision_beats_progress():
+    assert label_of("revised 30 questions on clustering again today") == Label.REVISION
+
+
+def test_pdf_attachment_is_resource():
+    m = IncomingMessage(content="unit 3 slides",
+                        attachments=[Attachment(filename="u3.pdf", content_type="application/pdf")])
+    assert clf.classify(m, []).label == Label.RESOURCE
+
+
+def test_classifier_never_raises():
+    for junk in ["", "   ", "🙂🙂", "```\n```", "?" * 300, "\x00"]:
+        assert clf.classify(IncomingMessage(content=junk)).label in list(Label)
+
+
+def test_scores_and_evidence_recorded():
+    c = clf.classify(IncomingMessage(content="why is apriori slow on large datasets?"))
+    assert set(c.scores) == set(Label.values())
+    assert c.evidence and 0 <= c.confidence <= 1
+
+
+# ----------------------------------------------------------- topic matching
+def test_detects_topic_and_rolls_up():
+    topics, _ = ext.extract(IncomingMessage(content="the OSI model has seven layers"))
+    keys = {t.node_key for t in topics}
+    assert "osi_model" in keys and "computer_networks" in keys
+
+
+def test_detects_subtopic_chain():
+    topics, _ = ext.extract(IncomingMessage(content="revising the transport layer"))
+    keys = {t.node_key for t in topics}
+    assert {"transport_layer", "osi_model", "computer_networks"} <= keys
+
+
+def test_detects_all_six_subjects():
+    cases = {
+        "subnetting and routing tables": "computer_networks",
+        "apriori generates frequent itemsets": "data_mining",
+        "gradient descent and backpropagation": "machine_learning",
+        "pandas dataframe groupby": "python_ds",
+        "react hooks and useEffect": "web_development",
+        "hazard identification and risk assessment": "ohs_management",
+    }
+    for text, subject in cases.items():
+        topics, _ = ext.extract(IncomingMessage(content=text))
+        assert subject in {t.subject_key for t in topics}, f"{text!r} missed {subject}"
+
+
+def test_channel_prior_when_no_topic_named():
+    ctx = ChannelContext(external_id="1", label="data-mining", subject_key="data_mining")
+    topics, _ = ext.extract(IncomingMessage(content="that was harder than expected", channel=ctx))
+    assert {t.node_key for t in topics} == {"data_mining"}
+
+
+def test_urls_do_not_pollute_matching():
+    topics, _ = ext.extract(IncomingMessage(content="https://x.com/pandas-clustering-react"))
+    assert topics == []
+
+
+def test_unknown_terms_become_candidates():
+    _, cands = ext.extract(IncomingMessage(content="Professor Zorkian covered Blarnix Theory"))
+    assert any("Zorkian" in c or "Blarnix" in c for c in cands)
+
+
+# ------------------------------------------------------------- integration
+def test_capture_stores_label_and_topics(engine):
+    p = engine.capture(msg("why does TCP need a three way handshake?", ext="c1"))
+    assert p.classification.label == Label.QUESTION
+    assert p.topics
+    row = engine.repo.entries()[0]
+    assert row["label"] == "question" and row["topics"]
+
+
+def test_human_relabel_supersedes(engine):
+    p = engine.capture(msg("the OSI model is layered", ext="c2"))
+    assert engine.repo.relabel(p.message_id, "revision")
+    row = engine.repo.entries()[0]
+    assert row["label"] == "revision" and row["label_source"] == "human"
+    assert engine.db.scalar("SELECT COUNT(*) FROM classifications") == 2
+
+
+def test_reclassify_preserves_message_count(engine):
+    engine.capture(msg("revised the transport layer", ext="rc1"))
+    engine.capture(msg("what is a socket?", ext="rc2"))
+    before = engine.repo.summary()["messages"]
+    assert engine.reclassify_all()["reclassified"] == before
+    assert engine.repo.summary()["messages"] == before
+
+
+def test_cooccurrence_edges_learned(engine):
+    engine.capture(msg("used pandas to preprocess data before clustering", ext="co1"))
+    assert any(e["relation"] == "co_occurs" for e in engine.repo.graph()["edges"])
+
+
+def test_weak_topics_surface_unresolved(engine):
+    for i in range(3):
+        engine.capture(msg(f"why is apriori so confusing? case {i}", ext=f"w{i}"))
+    assert any("Apriori" in t["name"] or "Association" in t["name"]
+               for t in engine.repo.weak_topics())
+
+
+def test_analytics_endpoints_shape(engine):
+    engine.capture(msg("revised subnetting again", ext="a1"))
+    assert engine.repo.label_counts()
+    assert engine.repo.hourly_pattern()
+    assert engine.repo.daily_activity(7)
+    assert engine.repo.streak() >= 1

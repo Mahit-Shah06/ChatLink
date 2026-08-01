@@ -1,0 +1,166 @@
+{
+  "version": "sem5-ds.1",
+  "_comment": [
+    "Subject/topic/subtopic taxonomy. This is DATA — nothing in the code",
+    "hardcodes a subject. Add topics as you meet them; keys must be unique",
+    "and stable once messages are linked to them.",
+    "",
+    "Subject keys match data/syllabus.json so channel context lines up.",
+    "Aliases are matched case-insensitively after singularisation, so 'trees'",
+    "matches 'tree'. Short aliases (<=3 chars) only fire with supporting context."
+  ],
+
+  "subjects": [
+    {
+      "key": "computer_networks",
+      "name": "Computer Networks",
+      "aliases": ["cn", "networks", "networking", "computer network"],
+      "topics": [
+        {
+          "key": "osi_model", "name": "OSI Model",
+          "aliases": ["osi", "osi layers", "seven layer model", "7 layer model", "layered architecture"],
+          "related": ["tcp_ip_model"],
+          "subtopics": [
+            {"key": "physical_layer", "name": "Physical Layer", "aliases": ["layer 1", "l1"]},
+            {"key": "data_link_layer", "name": "Data Link Layer", "aliases": ["layer 2", "l2", "dll", "framing", "error detection", "crc", "hamming code"]},
+            {"key": "network_layer", "name": "Network Layer", "aliases": ["layer 3", "l3"]},
+            {"key": "transport_layer", "name": "Transport Layer", "aliases": ["layer 4", "l4"]},
+            {"key": "application_layer", "name": "Application Layer", "aliases": ["layer 7", "l7"]}
+          ]
+        },
+        {
+          "key": "tcp_ip_model", "name": "TCP/IP Model",
+          "aliases": ["tcp ip", "tcpip", "internet protocol suite"],
+          "subtopics": [
+            {"key": "tcp", "name": "TCP", "aliases": ["transmission control protocol", "three way handshake", "3 way handshake", "handshake"]},
+            {"key": "udp", "name": "UDP", "aliases": ["user datagram protocol"]},
+            {"key": "congestion_control", "name": "Congestion Control", "aliases": ["slow start", "aimd", "tcp reno", "tcp tahoe", "congestion window"]},
+            {"key": "flow_control", "name": "Flow Control", "aliases": ["sliding window", "stop and wait", "go back n", "selective repeat", "arq"]}
+          ]
+        },
+        {
+          "key": "ip_addressing", "name": "IP Addressing",
+          "aliases": ["ip address", "ipv4", "ipv6", "cidr", "vlsm", "classful", "classless"],
+          "subtopics": [
+            {"key": "subnetting", "name": "Subnetting", "aliases": ["subnet", "subnet mask", "cidr notation", "supernetting"]},
+            {"key": "nat", "name": "NAT", "aliases": ["network address translation", "cgnat", "pat"]}
+          ]
+        },
+        {
+          "key": "routing", "name": "Routing",
+          "aliases": ["routing protocol", "router", "routing table"],
+          "subtopics": [
+            {"key": "distance_vector", "name": "Distance Vector Routing", "aliases": ["rip", "bellman ford routing", "count to infinity"]},
+            {"key": "link_state", "name": "Link State Routing", "aliases": ["ospf", "dijkstra routing"]},
+            {"key": "bgp", "name": "BGP", "aliases": ["border gateway protocol"]}
+          ]
+        },
+        {"key": "dns", "name": "DNS", "aliases": ["domain name system", "name resolution", "dns record"], "subtopics": []},
+        {"key": "http_protocol", "name": "HTTP", "aliases": ["https", "http2", "http3"], "subtopics": []},
+        {"key": "network_security", "name": "Network Security", "aliases": ["firewall", "tls", "ssl", "vpn", "ipsec", "cryptography", "encryption"], "subtopics": []},
+        {"key": "switching", "name": "Switching", "aliases": ["circuit switching", "packet switching", "vlan", "switch", "arp", "mac address", "ethernet", "csma"], "subtopics": []}
+      ]
+    },
+
+    {
+      "key": "data_mining",
+      "name": "Data Mining Techniques",
+      "aliases": ["dm", "data mining", "mining", "dmt"],
+      "topics": [
+        {"key": "data_preprocessing", "name": "Data Preprocessing", "aliases": ["preprocessing", "data cleaning", "missing value", "normalization", "discretization", "data transformation", "outlier", "noise"], "subtopics": []},
+        {"key": "data_warehouse", "name": "Data Warehousing", "aliases": ["warehouse", "olap", "oltp", "star schema", "snowflake schema", "fact table", "dimension table", "data cube", "etl", "roll up", "drill down"], "subtopics": []},
+        {
+          "key": "association_rules", "name": "Association Rule Mining",
+          "aliases": ["association rule", "market basket", "frequent itemset", "support and confidence", "lift"],
+          "subtopics": [
+            {"key": "apriori", "name": "Apriori Algorithm", "aliases": ["apriori", "candidate generation"]},
+            {"key": "fp_growth", "name": "FP-Growth", "aliases": ["fp growth", "fp tree", "frequent pattern tree"]}
+          ]
+        },
+        {
+          "key": "classification_dm", "name": "Classification",
+          "aliases": ["classifier", "decision tree", "id3", "c4.5", "cart", "information gain", "gini index", "entropy", "naive bayes", "bayesian classification", "rule based classifier"],
+          "subtopics": []
+        },
+        {
+          "key": "clustering", "name": "Clustering",
+          "aliases": ["cluster", "kmeans", "k means", "k medoids", "hierarchical clustering", "agglomerative", "divisive", "dbscan", "density based", "silhouette"],
+          "subtopics": []
+        },
+        {"key": "outlier_detection", "name": "Outlier Detection", "aliases": ["anomaly detection", "outlier analysis"], "subtopics": []},
+        {"key": "dm_evaluation", "name": "Evaluation Metrics", "aliases": ["confusion matrix", "precision", "recall", "f1 score", "accuracy", "roc", "auc", "cross validation"], "subtopics": []}
+      ]
+    },
+
+    {
+      "key": "machine_learning",
+      "name": "Machine Learning",
+      "aliases": ["ml", "machine learning"],
+      "topics": [
+        {
+          "key": "supervised_learning", "name": "Supervised Learning",
+          "aliases": ["supervised", "labelled data", "labeled data"],
+          "subtopics": [
+            {"key": "linear_regression", "name": "Linear Regression", "aliases": ["regression", "least squares", "ols", "cost function", "mse"]},
+            {"key": "logistic_regression", "name": "Logistic Regression", "aliases": ["sigmoid", "log loss", "binary classification"]},
+            {"key": "svm", "name": "SVM", "aliases": ["support vector machine", "hyperplane", "kernel trick", "margin"]},
+            {"key": "knn", "name": "KNN", "aliases": ["k nearest neighbour", "k nearest neighbor", "nearest neighbour"]},
+            {"key": "ensemble", "name": "Ensemble Methods", "aliases": ["random forest", "bagging", "boosting", "adaboost", "gradient boosting", "xgboost"]}
+          ]
+        },
+        {"key": "unsupervised_learning", "name": "Unsupervised Learning", "aliases": ["unsupervised", "pca", "principal component", "dimensionality reduction", "lda"], "subtopics": []},
+        {
+          "key": "neural_networks", "name": "Neural Networks",
+          "aliases": ["neural network", "ann", "perceptron", "backpropagation", "back propagation", "activation function", "relu", "sigmoid function", "softmax", "epoch", "deep learning", "cnn", "rnn", "lstm", "transformer"],
+          "subtopics": []
+        },
+        {"key": "model_tuning", "name": "Model Tuning", "aliases": ["overfitting", "underfitting", "bias variance", "regularization", "regularisation", "l1 l2", "dropout", "hyperparameter", "grid search", "learning rate"], "subtopics": []},
+        {"key": "gradient_descent", "name": "Gradient Descent", "aliases": ["sgd", "stochastic gradient", "optimizer", "adam optimizer", "convergence"], "subtopics": []},
+        {"key": "reinforcement_learning", "name": "Reinforcement Learning", "aliases": ["rl", "q learning", "reward function", "markov decision"], "subtopics": []}
+      ]
+    },
+
+    {
+      "key": "python_ds",
+      "name": "Python for Data Science",
+      "aliases": ["python", "pds", "python for ds"],
+      "topics": [
+        {"key": "numpy", "name": "NumPy", "aliases": ["np", "ndarray", "array operations", "broadcasting", "vectorization"], "subtopics": []},
+        {"key": "pandas", "name": "Pandas", "aliases": ["pd", "dataframe", "series", "groupby", "merge dataframe", "pivot table", "iloc", "loc"], "subtopics": []},
+        {"key": "visualization", "name": "Data Visualisation", "aliases": ["matplotlib", "seaborn", "plotly", "histogram", "scatter plot", "box plot", "heatmap", "subplot"], "subtopics": []},
+        {"key": "python_basics", "name": "Python Fundamentals", "aliases": ["list comprehension", "dictionary", "lambda", "decorator", "generator", "iterator", "exception handling", "file handling", "oop python", "class python"], "subtopics": []},
+        {"key": "scikit_learn", "name": "Scikit-learn", "aliases": ["sklearn", "fit transform", "train test split", "pipeline sklearn"], "subtopics": []},
+        {"key": "statistics", "name": "Statistics", "aliases": ["mean median mode", "standard deviation", "variance", "correlation", "covariance", "hypothesis testing", "p value", "distribution", "probability"], "subtopics": []}
+      ]
+    },
+
+    {
+      "key": "web_development",
+      "name": "Web Application Development",
+      "aliases": ["wad", "web dev", "webdev", "web development", "web application"],
+      "topics": [
+        {"key": "frontend", "name": "Frontend", "aliases": ["html", "css", "javascript", "js", "dom", "flexbox", "grid css", "responsive design", "bootstrap", "tailwind"], "subtopics": []},
+        {"key": "frontend_frameworks", "name": "Frontend Frameworks", "aliases": ["react", "reactjs", "nextjs", "next js", "vue", "angular", "component", "props", "state", "hooks", "usestate", "useeffect"], "subtopics": []},
+        {"key": "backend", "name": "Backend", "aliases": ["server", "nodejs", "node js", "express", "flask", "django", "api", "rest api", "endpoint", "middleware", "routing backend"], "subtopics": []},
+        {"key": "web_database", "name": "Databases", "aliases": ["sql", "mysql", "postgres", "postgresql", "mongodb", "mongo", "crud", "orm", "query", "join", "schema design"], "subtopics": []},
+        {"key": "auth", "name": "Authentication", "aliases": ["authentication", "authorization", "jwt", "session", "cookie", "oauth", "login system", "hashing password", "bcrypt"], "subtopics": []},
+        {"key": "deployment", "name": "Deployment", "aliases": ["hosting", "deploy", "docker", "nginx", "aws", "vercel", "netlify", "ci cd", "cloudflare"], "subtopics": []},
+        {"key": "http_web", "name": "HTTP & Requests", "aliases": ["get request", "post request", "status code", "cors", "ajax", "fetch api", "axios"], "subtopics": []}
+      ]
+    },
+
+    {
+      "key": "ohs_management",
+      "name": "Occupational Health & Safety Management",
+      "aliases": ["ohs", "health and safety", "safety management", "occupational health"],
+      "topics": [
+        {"key": "hazard_identification", "name": "Hazard Identification", "aliases": ["hazard", "hira", "risk assessment", "risk matrix", "job safety analysis", "jsa"], "subtopics": []},
+        {"key": "safety_legislation", "name": "Safety Legislation", "aliases": ["factories act", "osha", "iso 45001", "compliance", "safety regulation", "statutory"], "subtopics": []},
+        {"key": "ppe", "name": "Personal Protective Equipment", "aliases": ["ppe", "protective equipment", "safety gear", "helmet", "respirator"], "subtopics": []},
+        {"key": "accident_investigation", "name": "Accident Investigation", "aliases": ["accident", "incident report", "near miss", "root cause analysis", "rca", "fishbone"], "subtopics": []},
+        {"key": "occupational_hazards", "name": "Occupational Hazards", "aliases": ["ergonomics", "noise exposure", "chemical hazard", "biological hazard", "occupational disease", "fire safety"], "subtopics": []},
+        {"key": "safety_culture", "name": "Safety Management Systems", "aliases": ["safety audit", "safety policy", "safety training", "safety culture", "permit to work"], "subtopics": []}
+      ]
+    }
+  ]
+}

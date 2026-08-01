@@ -49,6 +49,8 @@ class SubjectEntry:
     channel: str
     context_kind: str
     context_value: str
+    #: Posted and pinned inside the channel by !learn setup. Optional.
+    syllabus_text: str = ""
 
 
 @dataclass
@@ -98,6 +100,7 @@ def load_syllabus(path: Path | str | None = None) -> Syllabus:
             continue
         category = sem.get("category") or sem.get("name", sem["id"]).upper()
         entries = []
+
         for subj in sem.get("subjects", []):
             entries.append(SubjectEntry(
                 key=subj.get("key"),
@@ -105,38 +108,39 @@ def load_syllabus(path: Path | str | None = None) -> Syllabus:
                 channel=subj.get("channel") or _slug(subj.get("key", "")),
                 context_kind="semester",
                 context_value=sem["id"],
+                syllabus_text=subj.get("syllabus", ""),
             ))
+
+        # Exam channels live in the same category as the semester's subjects, so
+        # a semester is one self-contained block that can be archived whole.
+        for exam in sem.get("exams", []):
+            entries.append(SubjectEntry(
+                key=exam.get("key"),
+                name=exam.get("name", exam.get("channel", "")),
+                channel=exam.get("channel") or _slug(exam.get("name", "")),
+                context_kind="exam",
+                context_value=sem["id"],
+                syllabus_text=exam.get("syllabus", ""),
+            ))
+
         if entries:
             syllabus.categories[category] = entries
 
+    # Top-level "exams" is still honoured for anything spanning semesters (GATE etc).
     for exam in raw.get("exams", []):
         if not exam.get("active", True):
             continue
         category = exam.get("category") or exam.get("name", exam["id"]).upper()
-        entries = []
-        for ch in exam.get("channels", []):
-            entries.append(SubjectEntry(
+        entries = [
+            SubjectEntry(
                 key=ch.get("key"),
                 name=ch.get("name", ch.get("channel", "")),
                 channel=ch.get("channel") or _slug(ch.get("name", "")),
                 context_kind="exam",
                 context_value=exam["id"],
-            ))
-        if entries:
-            syllabus.categories[category] = entries
-
-    ref = raw.get("reference")
-    if ref:
-        category = ref.get("category", "REFERENCE")
-        entries = [
-            SubjectEntry(
-                key=None,
-                name=ch.get("name", ch.get("channel", "")),
-                channel=ch.get("channel") or _slug(ch.get("name", "")),
-                context_kind="reference",
-                context_value="",
+                syllabus_text=ch.get("syllabus", ""),
             )
-            for ch in ref.get("channels", [])
+            for ch in exam.get("channels", [])
         ]
         if entries:
             syllabus.categories[category] = entries

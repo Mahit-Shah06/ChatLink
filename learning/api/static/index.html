@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning Engine</title>
+<style>
+:root{
+  --sheet:#0E2A47; --deep:#09203A; --panel:#12314F;
+  --grid:rgba(232,238,244,.05); --rule:rgba(232,238,244,.15);
+  --chalk:#E8EEF4; --dim:#9FBBD4; --graphite:#5B84A8;
+  --amber:#F0A836; --verdigris:#46B39D; --violet:#B08CE8;
+  --cyan:#6FC3E8; --sand:#D8C48A;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--sheet);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;
+  color:var(--chalk);font-family:var(--mono);font-size:13px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+.sheet{max-width:1140px;margin:0 auto;padding:26px 20px 80px}
+
+.masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;
+  border-bottom:1px solid var(--rule);padding-bottom:13px;flex-wrap:wrap}
+.masthead h1{font-size:14px;font-weight:600;letter-spacing:.4em;text-transform:uppercase;margin:0}
+.masthead .sub{color:var(--graphite);font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;margin-top:6px}
+.status{font-size:11px;color:var(--dim);text-align:right}
+.status b{color:var(--verdigris);font-weight:500}
+.dimline{height:12px;position:relative;margin:0 0 24px;
+  border-left:1px solid var(--rule);border-right:1px solid var(--rule)}
+.dimline::after{content:"";position:absolute;top:50%;left:0;right:0;border-top:1px dashed var(--rule)}
+
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);margin-bottom:32px}
+.metric{background:var(--deep);padding:15px}
+.metric .n{font-size:28px;font-weight:300;line-height:1}
+.metric .k{font-size:9.5px;letter-spacing:.19em;text-transform:uppercase;
+  color:var(--graphite);margin-top:9px}
+.metric.good .n{color:var(--verdigris)}
+.metric.flag .n{color:var(--amber)}
+
+.panel{margin-bottom:32px}
+.panel>h2{font-size:10.5px;letter-spacing:.27em;text-transform:uppercase;color:var(--dim);
+  margin:0 0 4px;font-weight:500;display:flex;align-items:center;gap:12px}
+.panel>h2::after{content:"";flex:1;border-top:1px solid var(--rule)}
+.panel .note{color:var(--graphite);font-size:11px;margin:0 0 14px}
+.body{background:var(--deep);border:1px solid var(--rule);padding:17px}
+
+.activity{display:flex;align-items:flex-end;gap:3px;height:120px}
+.day{flex:1;min-width:4px;display:flex;flex-direction:column-reverse}
+.day span{display:block;width:100%}
+.day:hover{outline:1px solid var(--dim);outline-offset:1px}
+.axis{display:flex;justify-content:space-between;color:var(--graphite);font-size:10px;
+  margin-top:9px;border-top:1px solid var(--rule);padding-top:7px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 15px;margin-top:14px;font-size:10px;
+  letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+.legend i{display:inline-block;width:9px;height:9px;margin-right:6px;vertical-align:-1px}
+.legend b{color:var(--chalk);font-weight:500;margin-left:5px}
+
+.ledger{width:100%;border-collapse:collapse}
+.ledger th{font-size:9.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--graphite);
+  text-align:left;font-weight:500;padding:0 9px 9px;border-bottom:1px solid var(--rule)}
+.ledger th.c{text-align:center}
+.ledger td{padding:9px;border-bottom:1px solid rgba(232,238,244,.06)}
+.ledger tr:hover td{background:rgba(232,238,244,.03)}
+.tname{font-size:12.5px}
+.tname small{display:block;color:var(--graphite);font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;margin-top:2px}
+.balance{position:relative;height:16px;min-width:150px}
+.balance::before{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;
+  border-left:1px solid var(--rule)}
+.bar{position:absolute;top:3px;height:10px}
+.bar.settled{right:50%;background:var(--verdigris)}
+.bar.open{left:50%;background:var(--amber)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.mut{color:var(--graphite)}
+
+#graph{width:100%;height:400px;display:block}
+.gtip{position:fixed;pointer-events:none;background:var(--panel);border:1px solid var(--rule);
+  padding:7px 10px;font-size:11px;display:none;z-index:20;max-width:220px}
+.gtip b{color:var(--amber)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:11px}
+.card{border:1px solid var(--rule);padding:12px;background:var(--deep)}
+.card .r{font-size:9.5px;letter-spacing:.17em;text-transform:uppercase;
+  color:var(--amber);margin-bottom:6px}
+.card .r.stale{color:var(--cyan)}
+.card .t{font-size:12.5px;margin-bottom:4px}
+.card .d{color:var(--graphite);font-size:11px}
+
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+button.chip,input[type=search]{font-family:var(--mono);font-size:10px;letter-spacing:.15em;
+  text-transform:uppercase;background:transparent;color:var(--dim);
+  border:1px solid var(--rule);padding:6px 11px;cursor:pointer}
+button.chip:hover{border-color:var(--dim);color:var(--chalk)}
+button.chip[aria-pressed=true]{background:var(--chalk);color:var(--sheet);border-color:var(--chalk)}
+input[type=search]{text-transform:none;letter-spacing:normal;min-width:180px;
+  cursor:text;color:var(--chalk)}
+input[type=search]:focus,button.chip:focus-visible{outline:2px solid var(--amber);outline-offset:1px}
+select{font-family:var(--mono);font-size:9.5px;background:transparent;color:var(--dim);
+  border:1px solid var(--rule);padding:3px 6px;cursor:pointer}
+
+.entry{border-bottom:1px solid rgba(232,238,244,.07);padding:12px 0;
+  display:grid;grid-template-columns:88px 1fr;gap:15px}
+.entry .meta{font-size:9.5px;color:var(--graphite)}
+.entry .tag{display:inline-block;font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+  padding:2px 6px;margin-bottom:6px}
+.entry .txt{font-family:var(--sans);font-size:13.5px;line-height:1.55;
+  white-space:pre-wrap;word-break:break-word}
+.entry .sub{margin-top:6px;font-size:10px;color:var(--graphite);
+  display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.low{color:var(--amber)}
+
+.titleblock{position:fixed;right:0;bottom:0;background:var(--deep);
+  border-top:1px solid var(--rule);border-left:1px solid var(--rule);
+  display:grid;grid-template-columns:auto auto auto;font-size:9px;
+  letter-spacing:.12em;text-transform:uppercase;z-index:15}
+.titleblock div{padding:7px 13px;border-left:1px solid var(--rule)}
+.titleblock div:first-child{border-left:none}
+.titleblock span{display:block;color:var(--graphite);font-size:8px;margin-bottom:3px}
+.titleblock b{font-weight:500;color:var(--dim);text-transform:none;letter-spacing:.03em}
+
+.empty{color:var(--graphite);padding:24px 0;text-align:center;font-size:11.5px}
+.empty b{display:block;color:var(--dim);margin-bottom:6px;letter-spacing:.19em;
+  text-transform:uppercase}
+
+@media (max-width:640px){
+  .entry{grid-template-columns:1fr;gap:5px}
+  .titleblock{position:static;grid-template-columns:1fr 1fr;border:1px solid var(--rule);
+    margin-top:26px}
+  .sheet{padding-bottom:26px}
+  .masthead h1{letter-spacing:.22em}
+  #graph{height:300px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header class="masthead">
+    <div>
+      <h1>Learning Engine</h1>
+      <div class="sub" id="range">reading local database</div>
+    </div>
+    <div class="status" id="status">connecting…</div>
+  </header>
+  <div class="dimline"></div>
+
+  <div class="metrics" id="metrics"></div>
+
+  <section class="panel">
+    <h2>Daily capture</h2>
+    <p class="note">Every message sorted by type. Nothing here was typed as a command.</p>
+    <div class="body">
+      <div class="activity" id="activity"></div>
+      <div class="axis"><span id="from">—</span><span id="to">—</span></div>
+      <div class="legend" id="legend"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Topic ledger</h2>
+    <p class="note">Left of the rule: notes, progress, revision. Right: open questions.
+      Long bars to the right are the topics fighting you.</p>
+    <div class="body">
+      <table class="ledger">
+        <thead><tr><th>Topic</th><th class="c">Understanding ← → Open</th>
+          <th class="num">Seen</th><th class="num">Last</th></tr></thead>
+        <tbody id="ledger"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Study next</h2>
+    <p class="note">Derived from open questions and time since last contact. No model involved.</p>
+    <div class="cards" id="suggest"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Knowledge graph</h2>
+    <p class="note">Solid lines are syllabus structure. Dashed lines are connections
+      your own messages made.</p>
+    <div class="body"><canvas id="graph"></canvas></div>
+  </section>
+
+  <section class="panel">
+    <h2>Captured messages</h2>
+    <p class="note">Change a label to correct it. Corrections are stored separately
+      and become training data later.</p>
+    <div class="filters" id="filters"></div>
+    <div class="body" id="entries"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Taxonomy growth queue</h2>
+    <p class="note">Terms that keep appearing but aren't in the taxonomy yet.
+      Add them to taxonomy.json to start tracking them.</p>
+    <div class="body" id="candidates"></div>
+  </section>
+</div>
+
+<div class="gtip" id="gtip"></div>
+<footer class="titleblock" id="titleblock"></footer>
+
+<script>
+const L = {
+  question:{c:'var(--amber)',n:'Question'}, note:{c:'var(--chalk)',n:'Note'},
+  idea:{c:'var(--violet)',n:'Idea'}, progress:{c:'var(--verdigris)',n:'Progress'},
+  revision:{c:'var(--cyan)',n:'Revision'}, resource:{c:'var(--sand)',n:'Resource'},
+  random:{c:'var(--graphite)',n:'Random'}
+};
+const ORDER=['question','note','idea','progress','revision','resource','random'];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const api=async(p,o)=>(await fetch(p,o)).json();
+let state={label:null,review:false,q:''};
+
+async function metrics(){
+  const s=await api('/api/summary');
+  $('#status').innerHTML = s.messages ? `<b>${s.messages}</b> captured` : 'nothing captured yet';
+  $('#range').textContent = s.first_day ? `${s.first_day} → ${s.last_day}` : 'waiting for first message';
+  $('#metrics').innerHTML=[
+    ['Messages',s.messages,''],['Day streak',s.streak,s.streak>0?'good':''],
+    ['Active days',s.active_days,''],['Topics',s.topics_touched??'—',''],
+    ['Attachments',s.attachments,'']
+  ].map(([k,v,c])=>`<div class="metric ${c}"><div class="n">${v??0}</div><div class="k">${k}</div></div>`).join('');
+}
+
+async function activity(){
+  const days=await api('/api/activity?days=40'), el=$('#activity');
+  if(!days.length){el.innerHTML=`<div class="empty" style="flex:1"><b>No activity yet</b>Post in a study channel</div>`;return;}
+  const max=Math.max(...days.map(d=>d.total),1);
+  el.innerHTML=days.map(d=>{
+    const parts=ORDER.filter(l=>d[l]).map(l=>`<span style="height:${(d[l]/max)*108}px;background:${L[l].c}"></span>`).join('');
+    const detail=ORDER.filter(l=>d[l]).map(l=>`${L[l].n} ${d[l]}`).join(', ');
+    return `<div class="day" title="${d.date} — ${detail||'none'}">${parts}</div>`;
+  }).join('');
+  $('#from').textContent=days[0].date; $('#to').textContent=days[days.length-1].date;
+  const tot={}; days.forEach(d=>ORDER.forEach(l=>{if(d[l])tot[l]=(tot[l]||0)+d[l];}));
+  $('#legend').innerHTML=ORDER.map(l=>`<span><i style="background:${L[l].c}"></i>${L[l].n}<b>${tot[l]||0}</b></span>`).join('');
+}
+
+async function ledger(){
+  const rows=await api('/api/topics?kind=topic&limit=20'), b=$('#ledger');
+  if(!rows.length){b.innerHTML=`<tr><td colspan="4"><div class="empty"><b>No topics yet</b>Mention something like "OSI model" or "apriori"</div></td></tr>`;return;}
+  const cap=Math.max(...rows.map(r=>Math.max(r.questions||0,(r.notes||0)+(r.progress||0)+(r.revisions||0))),1);
+  b.innerHTML=rows.map(r=>{
+    const set=(r.notes||0)+(r.progress||0)+(r.revisions||0), open=r.questions||0;
+    return `<tr><td class="tname">${esc(r.name)}<small>${esc((r.subject_key||'').replace(/_/g,' '))}</small></td>
+      <td><div class="balance">
+        <div class="bar settled" style="width:${(set/cap)*48}%" title="${set} settled"></div>
+        <div class="bar open" style="width:${(open/cap)*48}%" title="${open} open"></div>
+      </div></td><td class="num">${r.mentions}</td><td class="num mut">${esc(r.last_seen||'—')}</td></tr>`;
+  }).join('');
+}
+
+async function suggest(){
+  const [weak,stale]=await Promise.all([api('/api/weak?limit=4'),api('/api/stale?limit=3')]);
+  const cards=[
+    ...weak.map(t=>({r:'unresolved',n:t.name,d:`${t.questions} question(s), ${t.notes} note(s) written`})),
+    ...stale.map(t=>({r:'stale',n:t.name,d:`last touched ${t.last_seen}, never revised`}))
+  ];
+  $('#suggest').innerHTML = cards.length
+    ? cards.map(c=>`<div class="card"><div class="r ${c.r}">${c.r}</div><div class="t">${esc(c.n)}</div><div class="d">${esc(c.d)}</div></div>`).join('')
+    : `<div class="empty" style="grid-column:1/-1"><b>Nothing to suggest yet</b>Suggestions appear once topics accumulate questions</div>`;
+}
+
+async function graph(){
+  const cv=$('#graph'),tip=$('#gtip'),data=await api('/api/graph?limit=80');
+  const dpr=devicePixelRatio||1,W=cv.clientWidth,H=cv.clientHeight;
+  cv.width=W*dpr;cv.height=H*dpr;
+  const ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+  if(!data.nodes.length){
+    ctx.fillStyle='#5B84A8';ctx.font='12px ui-monospace,monospace';ctx.textAlign='center';
+    ctx.fillText('Graph builds itself as topics appear together',W/2,H/2);return;
+  }
+  const idx=new Map(data.nodes.map((n,i)=>[n.key,i]));
+  const N=data.nodes.map((n,i)=>({...n,
+    x:W/2+Math.cos(i*2.399)*Math.min(W,H)*.33, y:H/2+Math.sin(i*2.399)*Math.min(W,H)*.33,
+    vx:0,vy:0,r:3.5+Math.min(9,Math.sqrt(n.mentions||1)*2.1)}));
+  const E=data.edges.filter(e=>idx.has(e.src_key)&&idx.has(e.dst_key))
+    .map(e=>({s:idx.get(e.src_key),t:idx.get(e.dst_key),rel:e.relation,w:e.weight}));
+  for(let it=0;it<240;it++){
+    const k=1-it/280;
+    for(let i=0;i<N.length;i++)for(let j=i+1;j<N.length;j++){
+      let dx=N[j].x-N[i].x,dy=N[j].y-N[i].y,d2=dx*dx+dy*dy||1,d=Math.sqrt(d2);
+      const f=2000/d2,fx=dx/d*f,fy=dy/d*f;
+      N[i].vx-=fx;N[i].vy-=fy;N[j].vx+=fx;N[j].vy+=fy;
+    }
+    E.forEach(e=>{const a=N[e.s],b=N[e.t];
+      let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy)||1;
+      const f=(d-(e.rel==='contains'?56:86))*.014*(e.rel==='contains'?1.4:.8);
+      a.vx+=dx/d*f;a.vy+=dy/d*f;b.vx-=dx/d*f;b.vy-=dy/d*f;});
+    N.forEach(n=>{n.vx+=(W/2-n.x)*.0022;n.vy+=(H/2-n.y)*.0022;
+      n.x+=n.vx*k;n.y+=n.vy*k;n.vx*=.82;n.vy*=.82;
+      n.x=Math.max(n.r+12,Math.min(W-n.r-12,n.x));n.y=Math.max(n.r+12,Math.min(H-n.r-12,n.y));});
+  }
+  const draw=h=>{ctx.clearRect(0,0,W,H);
+    E.forEach(e=>{const a=N[e.s],b=N[e.t],obs=e.rel==='co_occurs';
+      ctx.beginPath();ctx.setLineDash(obs?[3,4]:[]);
+      ctx.strokeStyle=obs?`rgba(240,168,54,${Math.min(.5,.14+e.w*.05)})`:'rgba(232,238,244,.12)';
+      ctx.lineWidth=obs?Math.min(2,.7+e.w*.14):1;
+      ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();});
+    ctx.setLineDash([]);
+    N.forEach(n=>{ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,7);
+      ctx.fillStyle=n.kind==='subject'?'#E8EEF4':'#46B39D';
+      ctx.globalAlpha=h&&h!==n?.35:1;ctx.fill();
+      if(n.kind==='subject'||n.mentions>2||h===n){
+        ctx.globalAlpha=h&&h!==n?.3:.92;ctx.fillStyle='#E8EEF4';
+        ctx.font='10px ui-monospace,monospace';ctx.textAlign='center';
+        ctx.fillText(n.name.length>20?n.name.slice(0,19)+'…':n.name,n.x,n.y-n.r-5);}
+      ctx.globalAlpha=1;});};
+  draw(null);
+  cv.onmousemove=ev=>{const r=cv.getBoundingClientRect();
+    const hit=N.find(n=>Math.hypot(n.x-(ev.clientX-r.left),n.y-(ev.clientY-r.top))<n.r+6);
+    draw(hit||null);
+    if(hit){tip.style.display='block';tip.style.left=(ev.clientX+14)+'px';tip.style.top=(ev.clientY+14)+'px';
+      tip.innerHTML=`<b>${esc(hit.name)}</b><br>${hit.mentions} mentions`;}
+    else tip.style.display='none';};
+  cv.onmouseleave=()=>{tip.style.display='none';draw(null);};
+}
+
+function filters(){
+  $('#filters').innerHTML=
+    `<button class="chip" data-l="" aria-pressed="${!state.label&&!state.review}">All</button>`+
+    ORDER.map(l=>`<button class="chip" data-l="${l}" aria-pressed="${state.label===l}">${L[l].n}</button>`).join('')+
+    `<button class="chip" data-r="1" aria-pressed="${state.review}">Check these</button>`+
+    `<input type="search" id="q" placeholder="search…" value="${esc(state.q)}">`;
+  $('#filters').querySelectorAll('button.chip').forEach(b=>b.onclick=()=>{
+    if(b.dataset.r){state.review=!state.review;state.label=null;}
+    else{state.label=b.dataset.l||null;state.review=false;}
+    filters();entries();});
+  let t;$('#q').oninput=e=>{clearTimeout(t);t=setTimeout(()=>{state.q=e.target.value.trim();entries();},320);};
+}
+
+async function entries(){
+  const p=new URLSearchParams({limit:35});
+  if(state.label)p.set('label',state.label);
+  if(state.review)p.set('review','1');
+  if(state.q)p.set('q',state.q);
+  const rows=await api('/api/entries?'+p),el=$('#entries');
+  if(!rows.length){el.innerHTML=`<div class="empty"><b>Nothing here</b>${state.q?'No match':'No messages with this label yet'}</div>`;return;}
+  el.innerHTML=rows.map(r=>{
+    const lb=L[r.label]||L.random, low=r.label_source==='auto'&&r.confidence<0.5;
+    return `<div class="entry">
+      <div class="meta">${esc((r.local_date||''))}<br>${String(r.local_hour??'').padStart(2,'0')}h<br>
+        <span class="mut">${esc(r.channel_label||'')}</span></div>
+      <div><span class="tag" style="background:${lb.c};color:var(--sheet)">${esc(lb.n)}</span>
+        <div class="txt">${esc(r.content)||'<i>(attachment only)</i>'}</div>
+        <div class="sub">
+          <span class="${low?'low':''}">conf ${(r.confidence??0).toFixed(2)}${low?' · check':''}</span>
+          ${r.topics?`<span>${esc(r.topics)}</span>`:''}
+          ${r.label_source==='human'?'<span style="color:var(--verdigris)">corrected</span>':''}
+          <select data-id="${r.message_id}" aria-label="Correct label">
+            <option value="">fix label…</option>
+            ${ORDER.map(l=>`<option value="${l}">${L[l].n}</option>`).join('')}
+          </select></div></div></div>`;}).join('');
+  el.querySelectorAll('select').forEach(s=>s.onchange=async()=>{
+    if(!s.value)return;
+    await api('/api/label',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({message_id:+s.dataset.id,label:s.value})});
+    entries();ledger();});
+}
+
+async function candidates(){
+  const c=await api('/api/candidates?min=2&limit=25');
+  $('#candidates').innerHTML=c.length
+    ?`<div class="legend" style="margin:0">${c.map(x=>`<span>${esc(x.term)}<b>${x.occurrences}×</b></span>`).join('')}</div>`
+    :`<div class="empty"><b>Queue empty</b>Unrecognised recurring terms collect here</div>`;
+}
+
+async function titleblock(){
+  const m=await api('/api/meta');
+  $('#titleblock').innerHTML=`
+    <div><span>Classifier</span><b>${esc(m.classifier||'—')}</b></div>
+    <div><span>Taxonomy</span><b>${esc(m.taxonomy||'—')}</b></div>
+    <div><span>Records</span><b>${m.summary?.messages??0}</b></div>`;
+}
+
+(async function(){
+  filters();
+  await Promise.all([metrics(),activity(),ledger(),suggest(),entries(),candidates(),titleblock()]);
+  graph();
+})();
+setInterval(()=>{metrics();activity();entries();},30000);
+let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(graph,250);});
+</script>
+</body>
+</html>

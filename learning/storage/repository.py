@@ -14,7 +14,8 @@ import hashlib
 import json
 from typing import Any, Dict, List, Optional
 
-from ..models import Attachment, ChannelContext, IncomingMessage
+from ..models import (Attachment, ChannelContext, Classification, IncomingMessage,
+                      Label, ProcessedMessage, TopicMatch)
 from .db import Database, local_parts, to_iso, utcnow
 
 
@@ -168,4 +169,300 @@ class LearningRepository:
             "ORDER BY rank LIMIT ?",
             (query, limit),
         )
+        return [dict(r) for r in rows]
+
+
+    # ==================================================== phase 3/4 : labels
+    def save_processed(self, processed: ProcessedMessage) -> int:
+        """Persist a message together with its label and topic links."""
+        message_id = self.save_message(processed.message)
+        processed.message_id = message_id
+        now = to_iso(utcnow())
+
+        with self.db.transaction() as conn:
+            if processed.classification:
+                self._write_classification(conn, message_id, processed.classification, now)
+            if processed.topics:
+                self._write_topics(conn, message_id, processed.topics, now)
+                self._write_cooccurrence(conn, processed.topics, now)
+            if processed.candidate_terms:
+                self._write_candidates(conn, processed.candidate_terms, now)
+
+        return message_id
+
+    def _write_classification(self, conn, message_id: int, c: Classification, now: str) -> None:
+        """Supersede, never update. Old opinions stay for comparison."""
+        conn.execute("UPDATE classifications SET is_active=0 WHERE message_id=? AND is_active=1",
+                     (message_id,))
+        conn.execute(
+            """
+            INSERT INTO classifications (message_id, label, secondary_label, confidence,
+                                         scores, evidence, classifier_name, classifier_version,
+                                         label_source, is_active, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+            """,
+            (message_id, c.label.value,
+             c.secondary_label.value if c.secondary_label else None,
+             float(c.confidence), json.dumps(c.scores), json.dumps(c.evidence),
+             c.classifier_name, c.classifier_version, c.label_source, now),
+        )
+
+    def _write_topics(self, conn, message_id: int, topics, now: str) -> None:
+        conn.execute("UPDATE topic_links SET is_active=0 WHERE message_id=?", (message_id,))
+        for t in topics:
+            if not conn.execute("SELECT 1 FROM nodes WHERE key=?", (t.node_key,)).fetchone():
+                conn.execute(
+                    "INSERT INTO nodes (key, kind, name, parent_key, subject_key, "
+                    "taxonomy_version, metadata, created_at) VALUES (?,?,?,?,?,'runtime','{}',?)",
+                    (t.node_key, t.node_kind.value, t.name, t.parent_key, t.subject_key, now))
+            conn.execute(
+                """
+                INSERT INTO topic_links (message_id, node_key, confidence, matched_text,
+                                         extractor_name, extractor_version, is_active, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+                ON CONFLICT(message_id, node_key, extractor_name) DO UPDATE SET
+                    confidence=excluded.confidence, matched_text=excluded.matched_text,
+                    extractor_version=excluded.extractor_version, is_active=1
+                """,
+                (message_id, t.node_key, float(t.confidence), t.matched_text,
+                 "taxonomy-matcher", "current", now))
+
+    def _write_cooccurrence(self, conn, topics, now: str) -> None:
+        """Two topics in one message is weak evidence they connect. Accumulate."""
+        keys = sorted({t.node_key for t in topics if t.confidence >= 0.6})
+        for i, a in enumerate(keys):
+            for b in keys[i + 1:]:
+                conn.execute(
+                    """
+                    INSERT INTO edges (src_key, dst_key, relation, weight, observations,
+                                       created_at, updated_at)
+                    VALUES (?, ?, 'co_occurs', 1.0, 1, ?, ?)
+                    ON CONFLICT(src_key, dst_key, relation) DO UPDATE SET
+                        observations = edges.observations + 1,
+                        weight = edges.weight + 1.0,
+                        updated_at = excluded.updated_at
+                    """, (a, b, now, now))
+
+    def _write_candidates(self, conn, terms, now: str) -> None:
+        for term in terms:
+            conn.execute(
+                """
+                INSERT INTO candidate_terms (term, occurrences, first_seen, last_seen, status)
+                VALUES (?, 1, ?, ?, 'new')
+                ON CONFLICT(term) DO UPDATE SET
+                    occurrences = candidate_terms.occurrences + 1,
+                    last_seen = excluded.last_seen
+                """, (term, now, now))
+
+    def sync_taxonomy(self, taxonomy) -> dict:
+        """Upsert taxonomy nodes and structural edges. Safe on every boot."""
+        now = to_iso(utcnow())
+        with self.db.transaction() as conn:
+            for node in taxonomy.nodes.values():
+                conn.execute(
+                    """
+                    INSERT INTO nodes (key, kind, name, parent_key, subject_key,
+                                       taxonomy_version, metadata, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, '{}', ?)
+                    ON CONFLICT(key) DO UPDATE SET
+                        kind=excluded.kind, name=excluded.name,
+                        parent_key=excluded.parent_key, subject_key=excluded.subject_key,
+                        taxonomy_version=excluded.taxonomy_version
+                    """,
+                    (node.key, node.kind.value, node.name, node.parent_key,
+                     node.subject_key, taxonomy.version, now))
+            for src, dst, rel in taxonomy.edges:
+                conn.execute(
+                    "INSERT INTO edges (src_key, dst_key, relation, weight, observations, "
+                    "created_at, updated_at) VALUES (?,?,?,1.0,0,?,?) "
+                    "ON CONFLICT(src_key,dst_key,relation) DO UPDATE SET updated_at=excluded.updated_at",
+                    (src, dst, rel.value, now, now))
+        return {"nodes": len(taxonomy.nodes), "edges": len(taxonomy.edges)}
+
+    def relabel(self, message_id: int, label: str, source: str = "human") -> bool:
+        """A human correction. This is the training signal for a future model."""
+        row = self.db.query_one(
+            "SELECT classifier_name, classifier_version FROM classifications "
+            "WHERE message_id=? ORDER BY id DESC LIMIT 1", (message_id,))
+        if not row:
+            return False
+        now = to_iso(utcnow())
+        with self.db.transaction() as conn:
+            conn.execute("UPDATE classifications SET is_active=0 WHERE message_id=? AND is_active=1",
+                         (message_id,))
+            conn.execute(
+                "INSERT INTO classifications (message_id, label, confidence, scores, evidence, "
+                "classifier_name, classifier_version, label_source, is_active, created_at) "
+                "VALUES (?, ?, 1.0, '{}', '[]', ?, ?, ?, 1, ?)",
+                (message_id, Label.parse(label).value, row["classifier_name"],
+                 row["classifier_version"], source, now))
+        return True
+
+    # ------------------------------------------------------------- analytics
+    def label_counts(self, days: Optional[int] = None):
+        where, params = "WHERE m.deleted_at IS NULL", []
+        if days:
+            where += " AND m.local_date >= date('now', ?, '+330 minutes')"
+            params.append(f"-{days} days")
+        rows = self.db.query(
+            f"SELECT c.label, COUNT(*) AS count, AVG(c.confidence) AS avg_confidence "
+            f"FROM messages m JOIN classifications c ON c.message_id=m.id AND c.is_active=1 "
+            f"{where} GROUP BY c.label ORDER BY count DESC", tuple(params))
+        return [dict(r) for r in rows]
+
+    def daily_activity(self, days: int = 30):
+        rows = self.db.query(
+            "SELECT m.local_date AS date, c.label, COUNT(*) AS count FROM messages m "
+            "LEFT JOIN classifications c ON c.message_id=m.id AND c.is_active=1 "
+            "WHERE m.deleted_at IS NULL GROUP BY m.local_date, c.label "
+            "ORDER BY m.local_date DESC LIMIT ?", (days * 8,))
+        buckets = {}
+        for r in rows:
+            entry = buckets.setdefault(r["date"], {"date": r["date"], "total": 0})
+            entry[r["label"] or "unclassified"] = r["count"]
+            entry["total"] += r["count"]
+        return sorted(buckets.values(), key=lambda x: x["date"])[-days:]
+
+    def hourly_pattern(self):
+        rows = self.db.query(
+            "SELECT local_hour AS hour, COUNT(*) AS count FROM messages "
+            "WHERE deleted_at IS NULL GROUP BY local_hour ORDER BY local_hour")
+        return [dict(r) for r in rows]
+
+    def topic_stats(self, kind=None, limit: int = 60):
+        where = ["tl.is_active = 1", "m.deleted_at IS NULL"]
+        params = []
+        if kind:
+            where.append("n.kind = ?")
+            params.append(kind)
+        params.append(limit)
+        rows = self.db.query(
+            f"""
+            SELECT n.key AS node_key, n.name, n.kind, n.parent_key, n.subject_key,
+                   COUNT(DISTINCT m.id) AS mentions,
+                   SUM(CASE WHEN c.label='question' THEN 1 ELSE 0 END) AS questions,
+                   SUM(CASE WHEN c.label='note'     THEN 1 ELSE 0 END) AS notes,
+                   SUM(CASE WHEN c.label='idea'     THEN 1 ELSE 0 END) AS ideas,
+                   SUM(CASE WHEN c.label='progress' THEN 1 ELSE 0 END) AS progress,
+                   SUM(CASE WHEN c.label='revision' THEN 1 ELSE 0 END) AS revisions,
+                   SUM(CASE WHEN c.label='resource' THEN 1 ELSE 0 END) AS resources,
+                   MIN(m.local_date) AS first_seen, MAX(m.local_date) AS last_seen
+            FROM topic_links tl
+            JOIN nodes n ON n.key = tl.node_key
+            JOIN messages m ON m.id = tl.message_id
+            LEFT JOIN classifications c ON c.message_id = m.id AND c.is_active = 1
+            WHERE {' AND '.join(where)}
+            GROUP BY n.key ORDER BY mentions DESC LIMIT ?
+            """, tuple(params))
+        out = []
+        for r in rows:
+            d = dict(r)
+            asked = d.get("questions") or 0
+            settled = (d.get("notes") or 0) + (d.get("revisions") or 0) + (d.get("progress") or 0)
+            d["open_ratio"] = round(asked / (asked + settled), 3) if (asked + settled) else 0.0
+            out.append(d)
+        return out
+
+    def weak_topics(self, min_mentions: int = 2, limit: int = 10):
+        """Questions asked but little understanding recorded."""
+        stats = [s for s in self.topic_stats(limit=400)
+                 if s["mentions"] >= min_mentions and s["questions"] > 0]
+        stats.sort(key=lambda s: (-s["open_ratio"], -s["questions"]))
+        return stats[:limit]
+
+    def stale_topics(self, days_since: int = 14, limit: int = 10):
+        """Studied once, never revisited."""
+        from datetime import timedelta
+        cutoff = (utcnow() + timedelta(minutes=330) - timedelta(days=days_since)).strftime("%Y-%m-%d")
+        stale = [s for s in self.topic_stats(limit=400)
+                 if s["last_seen"] and s["last_seen"] < cutoff
+                 and s["mentions"] >= 2 and (s["revisions"] or 0) == 0]
+        stale.sort(key=lambda s: (s["last_seen"], -s["mentions"]))
+        return stale[:limit]
+
+    def entries(self, label=None, node_key=None, query=None, needs_review=False,
+                limit: int = 50, offset: int = 0):
+        where = ["m.deleted_at IS NULL"]
+        params, joins = [], ""
+        if node_key:
+            joins += " JOIN topic_links tl ON tl.message_id=m.id AND tl.is_active=1 AND tl.node_key=?"
+            params.append(node_key)
+        if query:
+            joins += " JOIN messages_fts fts ON fts.rowid = m.id"
+            where.append("messages_fts MATCH ?")
+            params.append(query)
+        if label:
+            where.append("c.label = ?")
+            params.append(label)
+        if needs_review:
+            where.append("c.label_source='auto' AND c.confidence < 0.5")
+        params.extend([limit, offset])
+        rows = self.db.query(
+            f"""
+            SELECT m.id AS message_id, m.content, m.created_at, m.local_date, m.local_hour,
+                   m.author_name, ch.label AS channel_label,
+                   c.label, c.confidence, c.label_source, c.secondary_label,
+                   (SELECT COUNT(*) FROM attachments a WHERE a.message_id=m.id) AS attachment_count,
+                   (SELECT GROUP_CONCAT(n2.name, ' - ') FROM topic_links t2
+                      JOIN nodes n2 ON n2.key=t2.node_key
+                     WHERE t2.message_id=m.id AND t2.is_active=1 AND n2.kind!='subject') AS topics
+            FROM messages m
+            LEFT JOIN channels ch ON ch.id = m.channel_id
+            LEFT JOIN classifications c ON c.message_id = m.id AND c.is_active = 1
+            {joins}
+            WHERE {' AND '.join(where)}
+            ORDER BY m.created_at DESC LIMIT ? OFFSET ?
+            """, tuple(params))
+        return [dict(r) for r in rows]
+
+    def graph(self, limit_nodes: int = 120):
+        node_rows = self.db.query(
+            "SELECT n.key, n.name, n.kind, n.parent_key, n.subject_key, "
+            "COUNT(DISTINCT tl.message_id) AS mentions FROM nodes n "
+            "LEFT JOIN topic_links tl ON tl.node_key=n.key AND tl.is_active=1 "
+            "GROUP BY n.key HAVING mentions > 0 ORDER BY mentions DESC LIMIT ?", (limit_nodes,))
+        nodes = [dict(r) for r in node_rows]
+        keys = {n["key"] for n in nodes}
+        if not keys:
+            return {"nodes": [], "edges": []}
+        ph = ",".join("?" * len(keys))
+        edge_rows = self.db.query(
+            f"SELECT src_key, dst_key, relation, weight, observations FROM edges "
+            f"WHERE src_key IN ({ph}) AND dst_key IN ({ph})", (*keys, *keys))
+        return {"nodes": nodes, "edges": [dict(r) for r in edge_rows]}
+
+    def candidates(self, limit: int = 30, min_occurrences: int = 2):
+        rows = self.db.query(
+            "SELECT term, occurrences, last_seen FROM candidate_terms "
+            "WHERE status='new' AND occurrences >= ? ORDER BY occurrences DESC LIMIT ?",
+            (min_occurrences, limit))
+        return [dict(r) for r in rows]
+
+    def streak(self) -> int:
+        from datetime import datetime as _dt, timedelta as _td
+        rows = self.db.query("SELECT DISTINCT local_date FROM messages "
+                             "WHERE deleted_at IS NULL ORDER BY local_date DESC LIMIT 400")
+        if not rows:
+            return 0
+        days = [r["local_date"] for r in rows]
+        today = (utcnow() + _td(minutes=330)).date()
+        first = _dt.strptime(days[0], "%Y-%m-%d").date()
+        if (today - first).days > 1:
+            return 0
+        streak, expected = 0, first
+        for d in days:
+            dd = _dt.strptime(d, "%Y-%m-%d").date()
+            if dd == expected:
+                streak += 1
+                expected -= _td(days=1)
+            elif dd < expected:
+                break
+        return streak
+
+    def messages_for_reclassification(self, batch: int = 500, offset: int = 0):
+        rows = self.db.query(
+            "SELECT m.id, m.content, m.source, m.external_id, ch.external_id AS channel_external_id, "
+            "ch.subject_key, ch.label AS channel_label, ch.context_kind, ch.context_value "
+            "FROM messages m LEFT JOIN channels ch ON ch.id=m.channel_id "
+            "WHERE m.deleted_at IS NULL ORDER BY m.id LIMIT ? OFFSET ?", (batch, offset))
         return [dict(r) for r in rows]

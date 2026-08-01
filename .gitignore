@@ -48,3 +48,4 @@ data/learning/
 *.db-wal
 *.db-shm
 micro
+data/syllabus.json

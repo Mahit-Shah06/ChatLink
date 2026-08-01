@@ -1,64 +1,82 @@
 {
-  "version": 1,
+  "version": 2,
   "_comment": [
-    "This file is yours to edit. It drives three things:",
-    "  1. !learn setup   - creates the Discord categories and channels",
-    "  2. channel resolution - which channel means which subject",
-    "  3. phase 4 taxonomy - subject keys here should match taxonomy.json",
+    "One category per semester. Subjects and exam channels both live inside it,",
+    "so Semester 6 becomes a second category and Semester 5 stays intact as an archive.",
     "",
-    "subject_key must be stable. Rename 'name' freely; never rename a key",
-    "once messages have been captured against it.",
+    "'syllabus' is posted and pinned inside the subject's own channel by !learn setup.",
+    "Write it however you like. Re-running setup edits the existing pinned message",
+    "instead of posting a duplicate.",
     "",
-    "'channel' is the Discord channel name. Omit it and the key is used with",
-    "underscores turned into hyphens."
+    "'key' must stay stable once messages are captured against it.",
+    "'name' and 'channel' can be renamed freely."
   ],
 
   "semesters": [
     {
-      "id": "sem3",
-      "name": "Semester 3",
-      "category": "SEMESTER 3",
+      "id": "sem5",
+      "name": "Semester 5",
+      "category": "SEMESTER 5",
       "active": true,
+
       "subjects": [
-        { "key": "computer_networks", "name": "Computer Networks", "channel": "computer-networks" },
-        { "key": "dbms",              "name": "Database Management Systems", "channel": "dbms" },
-        { "key": "coa",               "name": "Computer Organisation & Architecture", "channel": "coa" },
-        { "key": "discrete_maths",    "name": "Discrete Mathematics", "channel": "discrete-maths" }
+        {
+          "key": "computer_networks",
+          "name": "Computer Networks",
+          "channel": "computer-networks",
+          "syllabus": "**COMPUTER NETWORKS**\n\n**Unit 1 - Introduction & Physical Layer**\nNetwork types, topologies, OSI model, TCP/IP model, transmission media, circuit vs packet switching\n\n**Unit 2 - Data Link Layer**\nFraming, error detection & correction (CRC, Hamming), flow control, sliding window, ARQ protocols, MAC, CSMA/CD, Ethernet\n\n**Unit 3 - Network Layer**\nIPv4/IPv6 addressing, subnetting, CIDR, NAT, routing algorithms (distance vector, link state), RIP, OSPF, BGP\n\n**Unit 4 - Transport Layer**\nTCP vs UDP, three-way handshake, flow control, congestion control (slow start, AIMD)\n\n**Unit 5 - Application Layer & Security**\nDNS, HTTP/HTTPS, SMTP, FTP, firewalls, TLS/SSL, VPN"
+        },
+        {
+          "key": "data_mining",
+          "name": "Data Mining Techniques",
+          "channel": "data-mining",
+          "syllabus": "**DATA MINING TECHNIQUES**\n\n**Unit 1 - Introduction & Preprocessing**\nKDD process, data types, data cleaning, missing values, normalization, discretization, outlier handling\n\n**Unit 2 - Data Warehousing**\nOLAP vs OLTP, star & snowflake schema, fact and dimension tables, data cube, roll-up/drill-down, ETL\n\n**Unit 3 - Association Rule Mining**\nFrequent itemsets, support & confidence, lift, Apriori algorithm, FP-Growth, FP-tree\n\n**Unit 4 - Classification**\nDecision trees (ID3, C4.5, CART), information gain, Gini index, entropy, Naive Bayes, rule-based classifiers\n\n**Unit 5 - Clustering & Evaluation**\nK-means, K-medoids, hierarchical clustering, DBSCAN, outlier detection, confusion matrix, precision/recall/F1"
+        },
+        {
+          "key": "machine_learning",
+          "name": "Machine Learning",
+          "channel": "machine-learning",
+          "syllabus": "**MACHINE LEARNING**\n\n**Unit 1 - Foundations**\nSupervised vs unsupervised vs reinforcement learning, train/test split, cross validation, bias-variance tradeoff\n\n**Unit 2 - Regression**\nLinear regression, least squares, cost function, MSE, gradient descent, logistic regression, sigmoid\n\n**Unit 3 - Classification**\nSVM, hyperplanes, kernel trick, KNN, decision trees, ensembles (random forest, bagging, boosting, AdaBoost)\n\n**Unit 4 - Unsupervised Learning**\nClustering, PCA, dimensionality reduction, LDA\n\n**Unit 5 - Neural Networks**\nPerceptron, activation functions, backpropagation, overfitting, regularization, dropout, intro to CNN/RNN"
+        },
+        {
+          "key": "ohs_management",
+          "name": "Occupational Health & Safety Management",
+          "channel": "health-safety",
+          "syllabus": "**OCCUPATIONAL HEALTH & SAFETY MANAGEMENT**\n\n**Unit 1 - Introduction**\nConcepts of health, safety and welfare, importance of OHS, safety terminology\n\n**Unit 2 - Hazard Identification & Risk Assessment**\nHazard types, HIRA, risk matrix, job safety analysis (JSA), hierarchy of controls\n\n**Unit 3 - Legislation & Standards**\nFactories Act, OSHA, ISO 45001, statutory compliance, duties of employer and employee\n\n**Unit 4 - Occupational Hazards**\nPhysical, chemical, biological and ergonomic hazards, noise exposure, occupational diseases, fire safety, PPE\n\n**Unit 5 - Safety Management Systems**\nSafety policy, safety audits, permit-to-work, accident investigation, root cause analysis, safety culture"
+        },
+        {
+          "key": "python_ds",
+          "name": "Python for Data Science",
+          "channel": "python-data-science",
+          "syllabus": "**PYTHON FOR DATA SCIENCE**\n\n**Unit 1 - Python Fundamentals**\nData types, control flow, functions, list comprehensions, dictionaries, lambda, exception handling, file handling, OOP basics\n\n**Unit 2 - NumPy**\nndarray, indexing & slicing, broadcasting, vectorized operations, linear algebra functions\n\n**Unit 3 - Pandas**\nSeries and DataFrame, loc vs iloc, filtering, groupby, merge & join, pivot tables, handling missing data\n\n**Unit 4 - Visualisation**\nMatplotlib basics, subplots, Seaborn, histograms, scatter plots, box plots, heatmaps\n\n**Unit 5 - Statistics & Modelling**\nDescriptive statistics, distributions, correlation, hypothesis testing, p-values, intro to scikit-learn"
+        },
+        {
+          "key": "web_development",
+          "name": "Web Application Development",
+          "channel": "web-dev",
+          "syllabus": "**WEB APPLICATION DEVELOPMENT**\n\n**Unit 1 - Frontend Basics**\nHTML5 semantics, CSS (box model, flexbox, grid), responsive design, JavaScript fundamentals, DOM manipulation\n\n**Unit 2 - Modern Frontend**\nES6+, async/await, fetch API, component-based UI, React (components, props, state, hooks)\n\n**Unit 3 - Backend**\nClient-server model, HTTP methods, status codes, REST API design, Node.js/Express, middleware, routing\n\n**Unit 4 - Databases**\nSQL basics, CRUD, joins, schema design, NoSQL/MongoDB, ORMs\n\n**Unit 5 - Security & Deployment**\nAuthentication vs authorization, sessions, cookies, JWT, password hashing, CORS, hosting and deployment"
+        }
+      ],
+
+      "exams": [
+        { "key": null, "name": "Mid Sem 1", "channel": "midsem-1",
+          "syllabus": "**MID SEM 1**\n\nPrep notes, doubts and progress for this exam.\nEverything is timestamped, so analytics can slice this period on its own." },
+        { "key": null, "name": "Mid Sem 2", "channel": "midsem-2" },
+        { "key": null, "name": "Final Exam", "channel": "final-exam" }
       ]
     },
+
     {
-      "id": "sem4",
-      "name": "Semester 4",
-      "category": "SEMESTER 4",
+      "id": "sem6",
+      "name": "Semester 6",
+      "category": "SEMESTER 6",
       "active": false,
-      "subjects": [
-        { "key": "operating_systems", "name": "Operating Systems", "channel": "operating-systems" },
-        { "key": "toc",               "name": "Theory of Computation", "channel": "toc" },
-        { "key": "dsa",               "name": "Data Structures & Algorithms", "channel": "dsa" }
+      "subjects": [],
+      "exams": [
+        { "key": null, "name": "Mid Sem 1", "channel": "s6-midsem-1" },
+        { "key": null, "name": "Mid Sem 2", "channel": "s6-midsem-2" },
+        { "key": null, "name": "Final Exam", "channel": "s6-final-exam" }
       ]
     }
-  ],
-
-  "exams": [
-    {
-      "id": "gate",
-      "name": "GATE",
-      "category": "GATE",
-      "active": true,
-      "channels": [
-        { "key": null, "name": "General prep",  "channel": "gate-prep" },
-        { "key": null, "name": "Previous years","channel": "gate-pyqs" },
-        { "key": "aptitude", "name": "Aptitude", "channel": "gate-aptitude" }
-      ]
-    }
-  ],
-
-  "reference": {
-    "category": "REFERENCE",
-    "channels": [
-      { "name": "Syllabus documents", "channel": "syllabus" },
-      { "name": "Textbooks and PDFs", "channel": "resources" }
-    ],
-    "_note": "Reference channels are created but NOT captured. Stable material lives here so it doesn't flood the analytics."
-  }
+  ]
 }
