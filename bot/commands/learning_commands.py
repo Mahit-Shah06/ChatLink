@@ -111,14 +111,21 @@ class LearningCommands(commands.Cog):
         )
         created_cats, created_chans, existing = [], [], 0
         pinned, pin_failed = 0, []
+        secured = 0
         guild = ctx.guild
+        overwrites = self._private_overwrites(guild, ctx.author)
 
         try:
             for category_name, entries in syllabus.categories.items():
                 category = discord.utils.get(guild.categories, name=category_name)
                 if category is None:
-                    category = await guild.create_category(category_name)
+                    category = await guild.create_category(
+                        category_name, overwrites=overwrites)
                     created_cats.append(category_name)
+                else:
+                    # Re-running setup re-asserts privacy on a category that
+                    # already exists, so this is also the repair command.
+                    await category.edit(overwrites=overwrites)
 
                 for entry in entries:
                     # Find the channel anywhere in the guild, not just in this
@@ -127,12 +134,19 @@ class LearningCommands(commands.Cog):
                     channel = discord.utils.get(guild.text_channels, name=entry.channel)
                     if channel is None:
                         channel = await guild.create_text_channel(
-                            entry.channel, category=category, topic=entry.name)
+                            entry.channel, category=category, topic=entry.name,
+                            overwrites=overwrites)
                         created_chans.append(entry.channel)
+                        secured += 1
                     else:
                         existing += 1
                         if channel.category != category:
                             await channel.edit(category=category)
+                        # Explicit per-channel overwrites rather than relying on
+                        # category sync: an adopted channel may have its own
+                        # permissions already, and those would win.
+                        await channel.edit(overwrites=overwrites)
+                        secured += 1
 
                     self.engine.channels.register(
                         ChannelContext(
@@ -153,7 +167,9 @@ class LearningCommands(commands.Cog):
 
         except discord.Forbidden:
             return await progress.edit(
-                content="❌ I need **Manage Channels** and **Manage Messages**.")
+                content="❌ I need **Manage Channels**, **Manage Messages** and "
+                        "**Manage Roles** (the last one is required to set "
+                        "channel permissions).")
         except Exception as exc:
             log.exception("learn setup failed")
             return await progress.edit(content=f"❌ Setup failed: {exc}")
@@ -170,6 +186,11 @@ class LearningCommands(commands.Cog):
                 inline=False)
         if existing:
             embed.add_field(name="Already existed", value=f"{existing} channel(s)", inline=False)
+        if secured:
+            embed.add_field(
+                name="🔒 Private",
+                value=f"{secured} channel(s) visible only to you and the bot",
+                inline=False)
         if pinned:
             embed.add_field(name="Syllabus pinned", value=f"{pinned} channel(s)", inline=False)
         if pin_failed:
@@ -184,6 +205,23 @@ class LearningCommands(commands.Cog):
                   "and linked to topics automatically. Reference channels are never captured.",
             inline=False)
         await progress.edit(content=None, embed=embed)
+
+    def _private_overwrites(self, guild: discord.Guild, owner: discord.Member) -> dict:
+        """Visible to you and the bot, nobody else.
+
+        Note: Discord's Administrator permission bypasses channel overwrites
+        entirely, so anyone with an admin role still sees these channels. That
+        is a server-level fact, not something this code can override.
+        """
+        return {
+            guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            owner: discord.PermissionOverwrite(
+                view_channel=True, send_messages=True, read_message_history=True,
+                manage_messages=True, attach_files=True, embed_links=True),
+            guild.me: discord.PermissionOverwrite(
+                view_channel=True, send_messages=True, read_message_history=True,
+                manage_messages=True, embed_links=True, add_reactions=True),
+        }
 
     async def _pin_syllabus(self, channel: discord.TextChannel, entry) -> bool | None:
         """Post the syllabus and pin it. Edits its own previous pin if there is one.
@@ -238,6 +276,79 @@ class LearningCommands(commands.Cog):
         if current.strip():
             chunks.append(current.strip())
         return chunks
+
+    @learn.command(name="cleanup")
+    @commands.has_permissions(administrator=True)
+    async def learn_cleanup(self, ctx):
+        """Delete empty categories and channels no longer in the syllabus. Admin only."""
+        syllabus = await asyncio.to_thread(load_syllabus)
+        wanted_channels = {e.channel for e in syllabus.all_entries()}
+        wanted_categories = set(syllabus.categories)
+
+        # Only ever touch channels this engine knows about. A channel that was
+        # never mapped is somebody else's, and deleting it would be rude.
+        mapped = {c.label for c in self.engine.channels.all()}
+        stale_channels = [
+            ch for ch in ctx.guild.text_channels
+            if ch.name in mapped and ch.name not in wanted_channels
+        ]
+
+        stale_categories = [
+            cat for cat in ctx.guild.categories
+            if not cat.channels
+            and cat.name not in wanted_categories
+            and cat.name in {"EXAMS", "REFERENCE"}
+        ]
+
+        if not stale_channels and not stale_categories:
+            return await ctx.send("Nothing to clean up.")
+
+        lines = []
+        if stale_channels:
+            lines.append("**Channels** (no longer in syllabus)\n" +
+                         ", ".join(f"`{c.name}`" for c in stale_channels))
+        if stale_categories:
+            lines.append("**Empty categories**\n" +
+                         ", ".join(f"`{c.name}`" for c in stale_categories))
+
+        total = len(stale_channels) + len(stale_categories)
+        confirm = await ctx.send(embed=discord.Embed(
+            title=f"🧹 Delete {total} item(s)?",
+            description="\n\n".join(lines) +
+                        "\n\nReact ✅ within 30s to confirm. **Messages inside will be lost.**",
+            color=0xF0A836))
+        await confirm.add_reaction("✅")
+
+        def check(reaction, user):
+            return (user == ctx.author and str(reaction.emoji) == "✅"
+                    and reaction.message.id == confirm.id)
+
+        try:
+            await self.bot.wait_for("reaction_add", timeout=30.0, check=check)
+        except asyncio.TimeoutError:
+            return await confirm.edit(
+                embed=discord.Embed(title="Cancelled — nothing deleted",
+                                    color=discord.Color.greyple()))
+
+        deleted = 0
+        for ch in stale_channels:
+            try:
+                self.engine.channels.forget(ch.id)
+                await ch.delete(reason="learning engine cleanup")
+                deleted += 1
+            except discord.HTTPException:
+                pass
+        for cat in stale_categories:
+            try:
+                await cat.delete(reason="learning engine cleanup")
+                deleted += 1
+            except discord.HTTPException:
+                pass
+
+        await confirm.edit(embed=discord.Embed(
+            title=f"🧹 Removed {deleted} item(s)",
+            description="Run `!learn channels` to see what's left.",
+            color=discord.Color.green()))
 
     # ------------------------------------------------------------ analytics
     @learn.command(name="weak")
