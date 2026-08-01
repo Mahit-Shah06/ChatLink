@@ -280,38 +280,50 @@ class LearningCommands(commands.Cog):
     @learn.command(name="cleanup")
     @commands.has_permissions(administrator=True)
     async def learn_cleanup(self, ctx):
-        """Delete empty categories and channels no longer in the syllabus. Admin only."""
+        """Delete channels and categories no longer in the syllabus. Admin only."""
         syllabus = await asyncio.to_thread(load_syllabus)
         wanted_channels = {e.channel for e in syllabus.all_entries()}
         wanted_categories = set(syllabus.categories)
 
-        # Only ever touch channels this engine knows about. A channel that was
-        # never mapped is somebody else's, and deleting it would be rude.
+        # Only ever touch channels this engine mapped. Anything unmapped belongs
+        # to someone else and is left alone.
         mapped = {c.label for c in self.engine.channels.all()}
         stale_channels = [
             ch for ch in ctx.guild.text_channels
             if ch.name in mapped and ch.name not in wanted_channels
         ]
 
-        stale_categories = [
-            cat for cat in ctx.guild.categories
-            if not cat.channels
-            and cat.name not in wanted_categories
-            and cat.name in {"EXAMS", "REFERENCE"}
-        ]
+        # Categories the engine created that the syllabus no longer asks for.
+        # Emptiness is evaluated AFTER the channel deletions below, not now —
+        # a category still holding a doomed channel isn't empty yet.
+        engine_categories = {c.category for c in self.engine.channels.all() if c.category}
+        doomed_ids = {ch.id for ch in stale_channels}
 
-        if not stale_channels and not stale_categories:
-            return await ctx.send("Nothing to clean up.")
+        def is_stale_category(cat) -> bool:
+            if cat.name in wanted_categories:
+                return False
+            # Everything left in it is about to be deleted (or it's already bare).
+            if any(ch.id not in doomed_ids for ch in cat.channels):
+                return False
+            # Either the registry still remembers creating it, or it's an empty
+            # shell left behind by a previous cleanup that removed its channels
+            # before re-checking the parent. Both are ours to remove.
+            return cat.name in engine_categories or not cat.channels
+
+        candidate_categories = [c for c in ctx.guild.categories if is_stale_category(c)]
+
+        if not stale_channels and not candidate_categories:
+            return await ctx.send("Nothing to clean up. Everything matches the syllabus.")
 
         lines = []
         if stale_channels:
-            lines.append("**Channels** (no longer in syllabus)\n" +
+            lines.append("**Channels** — no longer in the syllabus\n" +
                          ", ".join(f"`{c.name}`" for c in stale_channels))
-        if stale_categories:
-            lines.append("**Empty categories**\n" +
-                         ", ".join(f"`{c.name}`" for c in stale_categories))
+        if candidate_categories:
+            lines.append("**Categories** — will be empty after that\n" +
+                         ", ".join(f"`{c.name}`" for c in candidate_categories))
 
-        total = len(stale_channels) + len(stale_categories)
+        total = len(stale_channels) + len(candidate_categories)
         confirm = await ctx.send(embed=discord.Embed(
             title=f"🧹 Delete {total} item(s)?",
             description="\n\n".join(lines) +
@@ -326,29 +338,50 @@ class LearningCommands(commands.Cog):
         try:
             await self.bot.wait_for("reaction_add", timeout=30.0, check=check)
         except asyncio.TimeoutError:
-            return await confirm.edit(
-                embed=discord.Embed(title="Cancelled — nothing deleted",
-                                    color=discord.Color.greyple()))
+            return await confirm.edit(embed=discord.Embed(
+                title="Cancelled — nothing deleted", color=discord.Color.greyple()))
 
-        deleted = 0
+        removed_channels, removed_categories, failed = 0, 0, []
+
         for ch in stale_channels:
             try:
                 self.engine.channels.forget(ch.id)
                 await ch.delete(reason="learning engine cleanup")
-                deleted += 1
-            except discord.HTTPException:
-                pass
-        for cat in stale_categories:
-            try:
-                await cat.delete(reason="learning engine cleanup")
-                deleted += 1
-            except discord.HTTPException:
-                pass
+                removed_channels += 1
+            except discord.HTTPException as exc:
+                log.warning("could not delete #%s: %s", ch.name, exc)
+                failed.append(f"#{ch.name}")
 
-        await confirm.edit(embed=discord.Embed(
-            title=f"🧹 Removed {deleted} item(s)",
-            description="Run `!learn channels` to see what's left.",
-            color=discord.Color.green()))
+        # Now re-fetch. The category objects cached above still list the
+        # channels we just deleted, so emptiness has to be re-checked against
+        # current state rather than the snapshot.
+        for cat in candidate_categories:
+            fresh = ctx.guild.get_channel(cat.id)
+            if fresh is None:
+                continue
+            if fresh.channels:
+                failed.append(f"{fresh.name} (not empty)")
+                continue
+            try:
+                await fresh.delete(reason="learning engine cleanup")
+                removed_categories += 1
+            except discord.HTTPException as exc:
+                log.warning("could not delete category %s: %s", fresh.name, exc)
+                failed.append(fresh.name)
+
+        parts = []
+        if removed_channels:
+            parts.append(f"{removed_channels} channel(s)")
+        if removed_categories:
+            parts.append(f"{removed_categories} categor{'y' if removed_categories == 1 else 'ies'}")
+
+        embed = discord.Embed(
+            title=f"🧹 Removed {' and '.join(parts) or 'nothing'}",
+            color=discord.Color.green() if not failed else 0xF0A836)
+        if failed:
+            embed.add_field(name="Could not remove", value=", ".join(failed), inline=False)
+        embed.set_footer(text="!learn channels to see what's left")
+        await confirm.edit(embed=embed)
 
     # ------------------------------------------------------------ analytics
     @learn.command(name="weak")
