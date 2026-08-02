@@ -1,0 +1,31 @@
+[Unit]
+Description=ChatLink Learning Engine dashboard
+Documentation=https://github.com/Mahit-Shah06/ChatLink
+
+RequiresMountsFor=__REPO__
+After=network.target
+PartOf=chatlink.target
+
+# The dashboard reads the same SQLite file the bot writes. WAL mode makes that
+# safe, but starting after the bot avoids a cold-start race on first boot.
+After=chatlink-bot.service
+
+[Service]
+Type=simple
+WorkingDirectory=__REPO__
+ExecStart=__VENV__/bin/python3 -m learning.cli serve
+
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=chatlink-dashboard
+
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=chatlink.target

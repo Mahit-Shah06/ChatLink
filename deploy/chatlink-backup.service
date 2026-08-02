@@ -1,0 +1,17 @@
+[Unit]
+Description=ChatLink Learning Engine backup
+Documentation=https://github.com/Mahit-Shah06/ChatLink
+RequiresMountsFor=__REPO__
+
+[Service]
+# oneshot: runs, finishes, exits. The timer decides when.
+Type=oneshot
+WorkingDirectory=__REPO__
+ExecStart=__VENV__/bin/python3 tools/backup.py
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=chatlink-backup
+
+PrivateTmp=true
+NoNewPrivileges=true

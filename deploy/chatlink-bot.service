@@ -1,0 +1,37 @@
+[Unit]
+Description=ChatLink Discord bot
+Documentation=https://github.com/Mahit-Shah06/ChatLink
+
+# The repo lives on a removable drive. Without this, systemd starts the service
+# before the drive is mounted and it dies instantly on every boot.
+RequiresMountsFor=__REPO__
+
+# Discord needs the network genuinely up, not merely configured.
+After=network-online.target
+Wants=network-online.target
+PartOf=chatlink.target
+
+[Service]
+Type=simple
+WorkingDirectory=__REPO__
+ExecStart=__VENV__/bin/python3 main.py
+
+# Restart on crash, but stop trying if it fails 5 times in 5 minutes — that
+# means something is actually broken and a restart loop only hides it.
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
+# Journal only. The bot already logs through Python's logging module, so
+# duplicating to a file just means two things to rotate.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=chatlink-bot
+
+# Modest hardening. The service only needs its own repo directory writable.
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=chatlink.target

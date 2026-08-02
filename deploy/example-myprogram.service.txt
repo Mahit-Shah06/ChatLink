@@ -1,0 +1,30 @@
+# Template for adding your own program to autostart.
+#
+#   1. cp example-myprogram.service.txt ~/.config/systemd/user/myprogram.service
+#   2. edit the paths and the ExecStart line
+#   3. systemctl --user daemon-reload
+#   4. systemctl --user enable --now myprogram.service
+#
+# Because of WantedBy=chatlink.target it starts with everything else, and
+# `systemctl --user stop chatlink.target` stops it too.
+
+[Unit]
+Description=My program
+# Delete this line if the program does not live on a removable drive.
+RequiresMountsFor=/media/itzzsuperrr/846e0635-f4f1-4d51-b053-9c416566a01f
+After=network-online.target
+Wants=network-online.target
+PartOf=chatlink.target
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/your/program
+ExecStart=/path/to/venv/bin/python3 yourscript.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=myprogram
+
+[Install]
+WantedBy=chatlink.target

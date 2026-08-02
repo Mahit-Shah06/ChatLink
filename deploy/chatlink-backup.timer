@@ -1,0 +1,17 @@
+[Unit]
+Description=Daily ChatLink backup
+Documentation=https://github.com/Mahit-Shah06/ChatLink
+
+[Timer]
+# Every day at 23:00 local time.
+OnCalendar=*-*-* 23:00:00
+
+# If the laptop was off at 23:00, run once it comes back up rather than
+# silently skipping the day. This is the setting that matters for a laptop.
+Persistent=true
+
+# Avoid firing at the exact same second as anything else on the system.
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

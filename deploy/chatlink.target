@@ -1,0 +1,14 @@
+[Unit]
+# A grouping target. Everything that should come up when the laptop boots
+# declares WantedBy=chatlink.target, and this one line starts or stops the lot:
+#
+#     systemctl --user start chatlink.target
+#     systemctl --user stop chatlink.target
+#
+# Adding a program later means dropping a new .service file into this folder
+# and enabling it. Nothing here needs editing.
+Description=ChatLink services
+Documentation=https://github.com/Mahit-Shah06/ChatLink
+
+[Install]
+WantedBy=default.target
