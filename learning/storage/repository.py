@@ -466,3 +466,77 @@ class LearningRepository:
             "FROM messages m LEFT JOIN channels ch ON ch.id=m.channel_id "
             "WHERE m.deleted_at IS NULL ORDER BY m.id LIMIT ? OFFSET ?", (batch, offset))
         return [dict(r) for r in rows]
+
+    # ------------------------------------------------- dashboard: coverage
+    def all_node_stats(self) -> dict:
+        """Stats for every node that has ever been linked, keyed by node key.
+
+        Deliberately returns only what exists in the database. The caller merges
+        this against the taxonomy so that untouched syllabus topics still appear
+        — a coverage view that hides what you haven't done is useless.
+        """
+        rows = self.db.query(
+            """
+            SELECT tl.node_key,
+                   COUNT(DISTINCT m.id) AS mentions,
+                   SUM(CASE WHEN c.label='question' THEN 1 ELSE 0 END) AS questions,
+                   SUM(CASE WHEN c.label='note'     THEN 1 ELSE 0 END) AS notes,
+                   SUM(CASE WHEN c.label='idea'     THEN 1 ELSE 0 END) AS ideas,
+                   SUM(CASE WHEN c.label='progress' THEN 1 ELSE 0 END) AS progress,
+                   SUM(CASE WHEN c.label='revision' THEN 1 ELSE 0 END) AS revisions,
+                   SUM(CASE WHEN c.label='resource' THEN 1 ELSE 0 END) AS resources,
+                   MIN(m.local_date) AS first_seen,
+                   MAX(m.local_date) AS last_seen
+            FROM topic_links tl
+            JOIN messages m ON m.id = tl.message_id AND m.deleted_at IS NULL
+            LEFT JOIN classifications c ON c.message_id = m.id AND c.is_active = 1
+            WHERE tl.is_active = 1
+            GROUP BY tl.node_key
+            """)
+        return {r["node_key"]: dict(r) for r in rows}
+
+    def heatmap(self, days: int = 182) -> list:
+        """One cell per day for the last N days, including days with nothing.
+
+        A contribution grid is only readable if the empty days are there too —
+        the gaps are the information.
+        """
+        from datetime import date, timedelta
+
+        rows = self.db.query(
+            "SELECT local_date, COUNT(*) AS count FROM messages "
+            "WHERE deleted_at IS NULL GROUP BY local_date")
+        counts = {r["local_date"]: r["count"] for r in rows}
+
+        today = (utcnow() + timedelta(minutes=330)).date()
+        start = today - timedelta(days=days - 1)
+        out = []
+        for i in range(days):
+            d = start + timedelta(days=i)
+            key = d.strftime("%Y-%m-%d")
+            out.append({"date": key, "count": counts.get(key, 0),
+                        "weekday": d.weekday()})
+        return out
+
+    def timeline(self, limit: int = 60, offset: int = 0) -> list:
+        """Reverse-chronological feed with full timestamps, like a commit log."""
+        rows = self.db.query(
+            """
+            SELECT m.id AS message_id, m.content, m.created_at, m.local_date,
+                   m.local_hour, m.author_name, m.thread_id,
+                   ch.label AS channel_label, ch.subject_key,
+                   c.label, c.confidence, c.label_source,
+                   (SELECT COUNT(*) FROM attachments a WHERE a.message_id=m.id)
+                       AS attachment_count,
+                   (SELECT GROUP_CONCAT(n2.name, ' · ') FROM topic_links t2
+                      JOIN nodes n2 ON n2.key=t2.node_key
+                     WHERE t2.message_id=m.id AND t2.is_active=1
+                       AND n2.kind != 'subject') AS topics
+            FROM messages m
+            LEFT JOIN channels ch ON ch.id = m.channel_id
+            LEFT JOIN classifications c ON c.message_id = m.id AND c.is_active = 1
+            WHERE m.deleted_at IS NULL
+            ORDER BY m.created_at DESC
+            LIMIT ? OFFSET ?
+            """, (limit, offset))
+        return [dict(r) for r in rows]

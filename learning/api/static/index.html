@@ -82,6 +82,62 @@ body{
 .num{text-align:right;font-variant-numeric:tabular-nums}
 .mut{color:var(--graphite)}
 
+/* ---------- contribution heatmap ---------- */
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,11px);
+  gap:3px;overflow-x:auto;padding-bottom:4px}
+.heat i{width:11px;height:11px;display:block;background:rgba(232,238,244,.06);border-radius:2px}
+.heat i[data-l="1"]{background:rgba(70,179,157,.35)}
+.heat i[data-l="2"]{background:rgba(70,179,157,.6)}
+.heat i[data-l="3"]{background:rgba(70,179,157,.82)}
+.heat i[data-l="4"]{background:#46B39D}
+.heat i:hover{outline:1px solid var(--chalk);outline-offset:1px}
+.heatfoot{display:flex;justify-content:space-between;align-items:center;
+  margin-top:10px;font-size:10px;color:var(--graphite);letter-spacing:.1em}
+.scale{display:flex;gap:3px;align-items:center}
+.scale i{width:10px;height:10px;display:block;border-radius:2px}
+
+/* ---------- syllabus tree ---------- */
+.subj{border:1px solid var(--rule);margin-bottom:10px;background:var(--deep)}
+.subj>summary{padding:11px 14px;cursor:pointer;display:flex;align-items:center;
+  gap:12px;list-style:none;font-size:12.5px}
+.subj>summary::-webkit-details-marker{display:none}
+.subj>summary::before{content:"▸";color:var(--graphite);font-size:10px}
+.subj[open]>summary::before{content:"▾"}
+.subj .pct{margin-left:auto;font-size:10.5px;color:var(--graphite);
+  letter-spacing:.1em;white-space:nowrap}
+.subj .mini{width:60px;height:6px;background:rgba(232,238,244,.08);position:relative}
+.subj .mini b{position:absolute;left:0;top:0;bottom:0;background:var(--verdigris);display:block}
+.tlist{border-top:1px solid var(--rule);padding:8px 14px 12px}
+.trow{display:flex;align-items:center;gap:9px;padding:4px 0;font-size:12px}
+.trow .dot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;
+  background:rgba(232,238,244,.14)}
+.trow.done .dot{background:var(--verdigris)}
+.trow.open .dot{background:var(--amber)}
+.trow .nm{color:var(--dim)}
+.trow.done .nm{color:var(--chalk)}
+.trow .badge{font-size:8.5px;letter-spacing:.14em;padding:1px 5px;
+  border:1px solid var(--rule);color:var(--graphite)}
+.trow .badge.m{border-color:var(--amber);color:var(--amber)}
+.trow .cnt{margin-left:auto;font-size:10px;color:var(--graphite);
+  font-variant-numeric:tabular-nums}
+
+/* ---------- timeline ---------- */
+.tl{position:relative;padding-left:18px}
+.tl::before{content:"";position:absolute;left:4px;top:4px;bottom:4px;
+  border-left:1px solid var(--rule)}
+.tlday{font-size:10px;letter-spacing:.17em;text-transform:uppercase;
+  color:var(--graphite);margin:16px 0 8px;position:relative}
+.tlday:first-child{margin-top:0}
+.tlitem{position:relative;padding:6px 0 8px}
+.tlitem::before{content:"";position:absolute;left:-18px;top:11px;width:7px;height:7px;
+  border-radius:50%;background:var(--graphite)}
+.tlitem .when{font-size:9.5px;color:var(--graphite);letter-spacing:.08em}
+.tlitem .body{font-family:var(--sans);font-size:13px;line-height:1.5;margin-top:3px;
+  white-space:pre-wrap;word-break:break-word}
+.tlitem .meta{font-size:9.5px;color:var(--graphite);margin-top:4px;
+  display:flex;gap:11px;flex-wrap:wrap}
+.tlitem .lbl{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;padding:1px 5px}
+
 #graph{width:100%;height:400px;display:block}
 .gtip{position:fixed;pointer-events:none;background:var(--panel);border:1px solid var(--rule);
   padding:7px 10px;font-size:11px;display:none;z-index:20;max-width:220px}
@@ -167,6 +223,36 @@ select{font-family:var(--mono);font-size:9.5px;background:transparent;color:var(
   </section>
 
   <section class="panel">
+    <h2>Study history</h2>
+    <p class="note">One square per day. The gaps are the point.</p>
+    <div class="body">
+      <div class="heat" id="heat"></div>
+      <div class="heatfoot">
+        <span id="heatsum">—</span>
+        <span class="scale">less
+          <i style="background:rgba(232,238,244,.06)"></i>
+          <i style="background:rgba(70,179,157,.35)"></i>
+          <i style="background:rgba(70,179,157,.6)"></i>
+          <i style="background:rgba(70,179,157,.82)"></i>
+          <i style="background:#46B39D"></i>more</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Syllabus coverage</h2>
+    <p class="note">Every topic on the syllabus, touched or not. Amber dot means
+      more questions than notes. Click a subject to expand.</p>
+    <div id="syllabus"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Timeline</h2>
+    <p class="note">Everything you've logged, newest first, with timestamps.</p>
+    <div class="body"><div class="tl" id="timeline"></div></div>
+  </section>
+
+  <section class="panel">
     <h2>Topic ledger</h2>
     <p class="note">Left of the rule: notes, progress, revision. Right: open questions.
       Long bars to the right are the topics fighting you.</p>
@@ -247,6 +333,67 @@ async function activity(){
   $('#from').textContent=days[0].date; $('#to').textContent=days[days.length-1].date;
   const tot={}; days.forEach(d=>ORDER.forEach(l=>{if(d[l])tot[l]=(tot[l]||0)+d[l];}));
   $('#legend').innerHTML=ORDER.map(l=>`<span><i style="background:${L[l].c}"></i>${L[l].n}<b>${tot[l]||0}</b></span>`).join('');
+}
+
+async function heatmap(){
+  const days=await api('/api/heatmap?days=182'), el=$('#heat');
+  if(!days.length){el.innerHTML='';return;}
+  const max=Math.max(...days.map(d=>d.count),1);
+  // Pad the first column so rows line up with weekdays (Monday at the top).
+  const pad=days[0].weekday;
+  let cells='';
+  for(let i=0;i<pad;i++) cells+='<i style="visibility:hidden"></i>';
+  cells+=days.map(d=>{
+    const lvl=d.count===0?0:Math.min(4,Math.ceil(d.count/max*4));
+    return `<i data-l="${lvl}" title="${d.date} — ${d.count} message${d.count===1?'':'s'}"></i>`;
+  }).join('');
+  el.innerHTML=cells;
+  const total=days.reduce((a,d)=>a+d.count,0);
+  const active=days.filter(d=>d.count).length;
+  $('#heatsum').textContent=`${total} messages across ${active} active day${active===1?'':'s'} (last 26 weeks)`;
+}
+
+async function syllabus(){
+  const data=await api('/api/syllabus'), el=$('#syllabus');
+  if(!data.subjects?.length){el.innerHTML=`<div class="empty"><b>No syllabus loaded</b>Check taxonomy.json</div>`;return;}
+  el.innerHTML=data.subjects.map(s=>{
+    const pct=s.mse1_total?Math.round(100*s.mse1_touched/s.mse1_total):0;
+    const rows=s.topics.map(t=>{
+      const cls=t.mentions?(t.questions>(t.notes+t.revisions)?'open':'done'):'';
+      const counts=t.mentions?`${t.mentions}×`:'';
+      return `<div class="trow ${cls}"><span class="dot"></span>
+        <span class="nm">${esc(t.name)}</span>
+        ${t.mse1?'<span class="badge m">MSE-1</span>':''}
+        <span class="cnt">${counts}</span></div>`;
+    }).join('');
+    return `<details class="subj"><summary>
+      <span>${esc(s.name)}</span>
+      <span class="mini"><b style="width:${pct}%"></b></span>
+      <span class="pct">${s.mse1_touched}/${s.mse1_total} MSE-1 · ${s.touched}/${s.total} total</span>
+      </summary><div class="tlist">${rows}</div></details>`;
+  }).join('');
+}
+
+async function timeline(){
+  const rows=await api('/api/timeline?limit=40'), el=$('#timeline');
+  if(!rows.length){el.innerHTML=`<div class="empty"><b>Nothing logged yet</b>Post in a study channel and it appears here</div>`;return;}
+  let out='',lastDay='';
+  rows.forEach(r=>{
+    if(r.local_date!==lastDay){out+=`<div class="tlday">${esc(r.local_date)}</div>`;lastDay=r.local_date;}
+    const L=LABELS[r.label]||LABELS.random;
+    const time=(r.created_at||'').slice(11,16);
+    let text=(r.content||'').replace(/\n/g,' ');
+    if(text.length>150) text=text.slice(0,149)+'…';
+    out+=`<div class="tlitem">
+      <div class="when">${esc(time)} · ${esc(r.channel_label||'?')}</div>
+      <div class="body">${esc(text)||'<i>(attachment)</i>'}</div>
+      <div class="meta">
+        <span class="lbl" style="background:${L.c};color:var(--sheet)">${esc(L.n)}</span>
+        ${r.topics?`<span>${esc(r.topics)}</span>`:''}
+        ${r.attachment_count?`<span>📎${r.attachment_count}</span>`:''}
+      </div></div>`;
+  });
+  el.innerHTML=out;
 }
 
 async function ledger(){
@@ -388,10 +535,11 @@ async function titleblock(){
 
 (async function(){
   filters();
-  await Promise.all([metrics(),activity(),ledger(),suggest(),entries(),candidates(),titleblock()]);
+  await Promise.all([metrics(),activity(),heatmap(),syllabus(),timeline(),
+                     ledger(),suggest(),entries(),candidates(),titleblock()]);
   graph();
 })();
-setInterval(()=>{metrics();activity();entries();},30000);
+setInterval(()=>{metrics();activity();heatmap();timeline();entries();},30000);
 let rt;addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(graph,250);});
 </script>
 </body>

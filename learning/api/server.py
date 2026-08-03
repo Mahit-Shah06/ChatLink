@@ -93,6 +93,10 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/candidates": lambda: repo.candidates(
                     self._i(params, "limit", 30), self._i(params, "min", 2)),
                 "/api/channels": repo.per_channel,
+                "/api/heatmap": lambda: repo.heatmap(self._i(params, "days", 182)),
+                "/api/timeline": lambda: repo.timeline(
+                    self._i(params, "limit", 60), self._i(params, "offset", 0)),
+                "/api/syllabus": self._syllabus_coverage,
                 "/api/entries": lambda: repo.entries(
                     label=self._s(params, "label"),
                     node_key=self._s(params, "node"),
@@ -110,6 +114,64 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             log.exception("GET %s failed", route)
             return self._json({"error": str(exc)}, 500)
+
+    def _syllabus_coverage(self):
+        """The whole syllabus, touched or not, grouped by subject.
+
+        Merged here rather than in SQL because the MSE-1 flag and the unit
+        listing live in the taxonomy file, while the counts live in the
+        database. Neither side alone can answer "what have I not done yet".
+        """
+        tax = self.engine.taxonomy
+        stats = self.engine.repo.all_node_stats()
+
+        subjects = []
+        for node in tax.nodes.values():
+            if node.kind.value != "subject":
+                continue
+
+            topics = []
+            for t in tax.nodes.values():
+                if t.parent_key != node.key or t.kind.value != "topic":
+                    continue
+                st = stats.get(t.key, {})
+                subs = []
+                for sub in tax.nodes.values():
+                    if sub.parent_key != t.key:
+                        continue
+                    sst = stats.get(sub.key, {})
+                    subs.append({
+                        "key": sub.key, "name": sub.name,
+                        "mentions": sst.get("mentions", 0) or 0,
+                        "mse1": sub.mse1,
+                    })
+                topics.append({
+                    "key": t.key, "name": t.name, "mse1": t.mse1,
+                    "mentions": st.get("mentions", 0) or 0,
+                    "questions": st.get("questions", 0) or 0,
+                    "notes": st.get("notes", 0) or 0,
+                    "progress": st.get("progress", 0) or 0,
+                    "revisions": st.get("revisions", 0) or 0,
+                    "resources": st.get("resources", 0) or 0,
+                    "last_seen": st.get("last_seen"),
+                    "subtopics": sorted(subs, key=lambda x: x["name"]),
+                })
+
+            topics.sort(key=lambda x: (not x["mse1"], x["name"]))
+            in_scope = [t for t in topics if t["mse1"]]
+            done = [t for t in in_scope if t["mentions"]]
+            subjects.append({
+                "key": node.key, "name": node.name,
+                "mse1_units": tax.mse1_units.get(node.key, ""),
+                "topics": topics,
+                "total": len(topics),
+                "touched": sum(1 for t in topics if t["mentions"]),
+                "mse1_total": len(in_scope),
+                "mse1_touched": len(done),
+            })
+
+        subjects.sort(key=lambda s: s["name"])
+        return {"subjects": subjects, "taxonomy_version": tax.version}
 
     # ------------------------------------------------------------------ POST
     def do_POST(self) -> None:
