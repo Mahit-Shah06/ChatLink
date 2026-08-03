@@ -67,6 +67,30 @@ cp "$REPO/deploy/example-myprogram.service.txt" "$UNITS/" 2>/dev/null || true
 
 systemctl --user daemon-reload
 
+# ------------------------------------------------------------- ldb launcher
+mkdir -p "$HOME/.local/bin"
+install -m 755 "$REPO/deploy/ldb" "$HOME/.local/bin/ldb"
+echo "  installed ldb -> ~/.local/bin/ldb"
+
+if ! echo "$PATH" | tr ':' '\n' | grep -qx "$HOME/.local/bin"; then
+  echo "  NOTE: ~/.local/bin is not on your PATH. Add this to ~/.bashrc:"
+  echo '        export PATH="$HOME/.local/bin:$PATH"'
+fi
+
+# --------------------------------------------------------- friendly hostname
+# A hosts entry so the dashboard is http://learning:8787 rather than an IP.
+# This is the only step that needs sudo, and it is skipped if declined.
+if ! grep -qE "^127\.0\.0\.1[[:space:]]+learning( |$)" /etc/hosts 2>/dev/null; then
+  echo
+  echo "Add 'learning' as a local hostname? (needs sudo, one line in /etc/hosts)"
+  read -rp "  [Y/n] " hosts_reply
+  if [[ ! "$hosts_reply" =~ ^[Nn] ]]; then
+    echo "127.0.0.1 learning" | sudo tee -a /etc/hosts >/dev/null \
+      && echo "  added: http://learning:$(grep -oP 'LEARNING_API_PORT.*?\K[0-9]+' "$REPO/.env" 2>/dev/null || echo 8787)" \
+      || echo "  skipped (sudo failed)"
+  fi
+fi
+
 # ------------------------------------------------------------------ enable
 systemctl --user enable chatlink.target >/dev/null
 systemctl --user enable chatlink-bot.service >/dev/null

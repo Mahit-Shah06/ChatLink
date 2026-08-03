@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+#
+# ldb — open the Learning Engine dashboard.
+#
+#   ldb            open in the default browser
+#   ldb --status   show whether the service is up, without opening anything
+#   ldb --logs     tail the dashboard log
+#   ldb --restart  restart the dashboard service
+#
+# Installed to ~/.local/bin/ldb by deploy/install-autostart.sh.
+
+set -euo pipefail
+
+HOST="${LEARNING_HOST:-learning}"      # see /etc/hosts entry added by the installer
+PORT="${LEARNING_API_PORT:-8787}"
+URL="http://${HOST}:${PORT}"
+SERVICE="chatlink-dashboard.service"
+
+# Fall back to the loopback address if the hosts entry was never added.
+if ! getent hosts "$HOST" >/dev/null 2>&1; then
+  URL="http://127.0.0.1:${PORT}"
+fi
+
+case "${1:-open}" in
+  --status|-s)
+    systemctl --user status "$SERVICE" --no-pager --lines=5
+    echo
+    echo "URL: $URL"
+    exit 0
+    ;;
+  --logs|-l)
+    exec journalctl --user -u "$SERVICE" -f --no-pager
+    ;;
+  --restart|-r)
+    systemctl --user restart "$SERVICE"
+    echo "Restarted. $URL"
+    exit 0
+    ;;
+  --help|-h)
+    sed -n '3,12p' "$0" | sed 's/^# \?//'
+    exit 0
+    ;;
+esac
+
+# Start the service if it isn't up. Nothing more annoying than a browser tab
+# opening onto a connection-refused page.
+if ! systemctl --user is-active --quiet "$SERVICE"; then
+  echo "Dashboard isn't running — starting it…"
+  systemctl --user start "$SERVICE"
+  for _ in $(seq 1 20); do
+    if curl -sf -o /dev/null "http://127.0.0.1:${PORT}/api/summary" 2>/dev/null; then
+      break
+    fi
+    sleep 0.25
+  done
+fi
+
+if ! curl -sf -o /dev/null "http://127.0.0.1:${PORT}/api/summary" 2>/dev/null; then
+  echo "Dashboard is not responding on port ${PORT}."
+  echo "Check:  journalctl --user -u ${SERVICE} -n 30 --no-pager"
+  exit 1
+fi
+
+echo "Opening $URL"
+
+# Prefer Chrome since that's where the bookmarks live, then fall back.
+for browser in google-chrome google-chrome-stable chromium chromium-browser firefox xdg-open; do
+  if command -v "$browser" >/dev/null 2>&1; then
+    exec "$browser" "$URL" >/dev/null 2>&1
+  fi
+done
+
+echo "No browser found. Open manually: $URL"

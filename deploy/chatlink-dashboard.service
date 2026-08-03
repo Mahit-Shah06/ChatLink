@@ -6,6 +6,11 @@ RequiresMountsFor=__REPO__
 After=network.target
 PartOf=chatlink.target
 
+# Give up after 5 failures in 5 minutes rather than looping forever — a crash
+# loop hides the real error. These belong in [Unit], not [Service].
+StartLimitBurst=5
+StartLimitIntervalSec=300
+
 # The dashboard reads the same SQLite file the bot writes. WAL mode makes that
 # safe, but starting after the bot avoids a cold-start race on first boot.
 After=chatlink-bot.service
@@ -17,8 +22,6 @@ ExecStart=__VENV__/bin/python3 -m learning.cli serve
 
 Restart=on-failure
 RestartSec=10
-StartLimitBurst=5
-StartLimitIntervalSec=300
 
 StandardOutput=journal
 StandardError=journal
