@@ -1,165 +1,1134 @@
 {
-  "version": "sem5-ds.1",
+  "version": "sem5-ds.2",
   "_comment": [
-    "Subject/topic/subtopic taxonomy. This is DATA — nothing in the code",
-    "hardcodes a subject. Add topics as you meet them; keys must be unique",
-    "and stable once messages are linked to them.",
+    "Built from the GTU course syllabus and the LJIET MSE-1 syllabus PDFs.",
     "",
-    "Subject keys match data/syllabus.json so channel context lines up.",
-    "Aliases are matched case-insensitively after singularisation, so 'trees'",
-    "matches 'tree'. Short aliases (<=3 chars) only fire with supporting context."
+    "'mse1': true marks a topic as in scope for Mid Sem Exam 1 (40% of the course).",
+    "The scope is not simply 'the first N units' - Data Mining skips Unit 2,",
+    "Machine Learning jumps from Unit 2 to Unit 5. Those gaps are why this is",
+    "encoded as data rather than assumed.",
+    "",
+    "Keys must stay stable once messages are linked to them."
   ],
-
   "subjects": [
     {
       "key": "computer_networks",
       "name": "Computer Networks",
-      "aliases": ["cn", "networks", "networking", "computer network"],
+      "aliases": [
+        "cn",
+        "networks",
+        "networking",
+        "computer network"
+      ],
+      "mse1_units": "1, 2, 3",
       "topics": [
         {
-          "key": "osi_model", "name": "OSI Model",
-          "aliases": ["osi", "osi layers", "seven layer model", "7 layer model", "layered architecture"],
-          "related": ["tcp_ip_model"],
+          "key": "osi_model",
+          "name": "OSI Model",
+          "aliases": [
+            "osi",
+            "osi layers",
+            "seven layer model",
+            "7 layer model",
+            "layered architecture",
+            "network model"
+          ],
+          "mse1": true,
           "subtopics": [
-            {"key": "physical_layer", "name": "Physical Layer", "aliases": ["layer 1", "l1"]},
-            {"key": "data_link_layer", "name": "Data Link Layer", "aliases": ["layer 2", "l2", "dll", "framing", "error detection", "crc", "hamming code"]},
-            {"key": "network_layer", "name": "Network Layer", "aliases": ["layer 3", "l3"]},
-            {"key": "transport_layer", "name": "Transport Layer", "aliases": ["layer 4", "l4"]},
-            {"key": "application_layer", "name": "Application Layer", "aliases": ["layer 7", "l7"]}
+            {
+              "key": "physical_layer",
+              "name": "Physical Layer",
+              "aliases": [
+                "layer 1",
+                "l1",
+                "transmission media",
+                "twisted pair",
+                "coaxial",
+                "fibre optic",
+                "fiber optic"
+              ]
+            },
+            {
+              "key": "data_link_layer",
+              "name": "Data Link Layer",
+              "aliases": [
+                "layer 2",
+                "l2",
+                "dll",
+                "framing",
+                "error detection",
+                "error correction",
+                "crc",
+                "hamming code",
+                "checksum",
+                "parity"
+              ]
+            },
+            {
+              "key": "network_layer",
+              "name": "Network Layer",
+              "aliases": [
+                "layer 3",
+                "l3"
+              ]
+            },
+            {
+              "key": "transport_layer",
+              "name": "Transport Layer",
+              "aliases": [
+                "layer 4",
+                "l4"
+              ]
+            },
+            {
+              "key": "application_layer",
+              "name": "Application Layer",
+              "aliases": [
+                "layer 7",
+                "l7"
+              ]
+            }
           ]
         },
         {
-          "key": "tcp_ip_model", "name": "TCP/IP Model",
-          "aliases": ["tcp ip", "tcpip", "internet protocol suite"],
+          "key": "tcp_ip_model",
+          "name": "TCP/IP Model",
+          "aliases": [
+            "tcp ip",
+            "tcpip",
+            "internet protocol suite"
+          ],
+          "mse1": true,
           "subtopics": [
-            {"key": "tcp", "name": "TCP", "aliases": ["transmission control protocol", "three way handshake", "3 way handshake", "handshake"]},
-            {"key": "udp", "name": "UDP", "aliases": ["user datagram protocol"]},
-            {"key": "congestion_control", "name": "Congestion Control", "aliases": ["slow start", "aimd", "tcp reno", "tcp tahoe", "congestion window"]},
-            {"key": "flow_control", "name": "Flow Control", "aliases": ["sliding window", "stop and wait", "go back n", "selective repeat", "arq"]}
+            {
+              "key": "tcp",
+              "name": "TCP",
+              "aliases": [
+                "transmission control protocol",
+                "three way handshake",
+                "3 way handshake",
+                "handshake"
+              ]
+            },
+            {
+              "key": "udp",
+              "name": "UDP",
+              "aliases": [
+                "user datagram protocol"
+              ]
+            },
+            {
+              "key": "congestion_control",
+              "name": "Congestion Control",
+              "aliases": [
+                "slow start",
+                "aimd",
+                "tcp reno",
+                "tcp tahoe",
+                "congestion window"
+              ]
+            },
+            {
+              "key": "flow_control",
+              "name": "Flow Control",
+              "aliases": [
+                "sliding window",
+                "stop and wait",
+                "go back n",
+                "selective repeat",
+                "arq"
+              ]
+            }
           ]
         },
         {
-          "key": "ip_addressing", "name": "IP Addressing",
-          "aliases": ["ip address", "ipv4", "ipv6", "cidr", "vlsm", "classful", "classless"],
+          "key": "ip_addressing",
+          "name": "IP Addressing",
+          "aliases": [
+            "ip address",
+            "ipv4",
+            "ipv6",
+            "cidr",
+            "vlsm",
+            "classful",
+            "classless",
+            "addressing"
+          ],
+          "mse1": true,
           "subtopics": [
-            {"key": "subnetting", "name": "Subnetting", "aliases": ["subnet", "subnet mask", "cidr notation", "supernetting"]},
-            {"key": "nat", "name": "NAT", "aliases": ["network address translation", "cgnat", "pat"]}
+            {
+              "key": "subnetting",
+              "name": "Subnetting",
+              "aliases": [
+                "subnet",
+                "subnet mask",
+                "cidr notation",
+                "supernetting"
+              ]
+            },
+            {
+              "key": "nat",
+              "name": "NAT",
+              "aliases": [
+                "network address translation",
+                "cgnat",
+                "pat"
+              ]
+            }
           ]
         },
         {
-          "key": "routing", "name": "Routing",
-          "aliases": ["routing protocol", "router", "routing table"],
+          "key": "routing",
+          "name": "Routing",
+          "aliases": [
+            "routing protocol",
+            "router",
+            "routing table",
+            "routing algorithm"
+          ],
+          "mse1": true,
           "subtopics": [
-            {"key": "distance_vector", "name": "Distance Vector Routing", "aliases": ["rip", "bellman ford routing", "count to infinity"]},
-            {"key": "link_state", "name": "Link State Routing", "aliases": ["ospf", "dijkstra routing"]},
-            {"key": "bgp", "name": "BGP", "aliases": ["border gateway protocol"]}
+            {
+              "key": "distance_vector",
+              "name": "Distance Vector Routing",
+              "aliases": [
+                "rip",
+                "bellman ford routing",
+                "count to infinity"
+              ]
+            },
+            {
+              "key": "link_state",
+              "name": "Link State Routing",
+              "aliases": [
+                "ospf",
+                "dijkstra routing"
+              ]
+            },
+            {
+              "key": "bgp",
+              "name": "BGP",
+              "aliases": [
+                "border gateway protocol"
+              ]
+            }
           ]
         },
-        {"key": "dns", "name": "DNS", "aliases": ["domain name system", "name resolution", "dns record"], "subtopics": []},
-        {"key": "http_protocol", "name": "HTTP", "aliases": ["https", "http2", "http3"], "subtopics": []},
-        {"key": "network_security", "name": "Network Security", "aliases": ["firewall", "tls", "ssl", "vpn", "ipsec", "cryptography", "encryption"], "subtopics": []},
-        {"key": "switching", "name": "Switching", "aliases": ["circuit switching", "packet switching", "vlan", "switch", "arp", "mac address", "ethernet", "csma"], "subtopics": []}
+        {
+          "key": "switching",
+          "name": "Switching & LAN",
+          "aliases": [
+            "circuit switching",
+            "packet switching",
+            "vlan",
+            "switch",
+            "arp",
+            "mac address",
+            "ethernet",
+            "csma",
+            "mac protocol",
+            "topology",
+            "star topology",
+            "bus topology",
+            "mesh topology",
+            "lan"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "dns",
+          "name": "DNS",
+          "aliases": [
+            "domain name system",
+            "name resolution",
+            "dns record"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "http_protocol",
+          "name": "HTTP & Application Protocols",
+          "aliases": [
+            "https",
+            "ftp",
+            "smtp",
+            "email protocol",
+            "http"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "network_security",
+          "name": "Network Security",
+          "aliases": [
+            "firewall",
+            "tls",
+            "ssl",
+            "vpn",
+            "ipsec",
+            "cryptography",
+            "ids",
+            "ips"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "wireless_iot",
+          "name": "Wireless, IoT & Cloud",
+          "aliases": [
+            "wifi",
+            "wi fi",
+            "bluetooth",
+            "5g",
+            "mqtt",
+            "coap",
+            "sdn",
+            "container networking"
+          ],
+          "mse1": false,
+          "subtopics": []
+        }
       ]
     },
-
     {
       "key": "data_mining",
       "name": "Data Mining Techniques",
-      "aliases": ["dm", "data mining", "mining", "dmt"],
+      "aliases": [
+        "dm",
+        "data mining",
+        "mining",
+        "dmt"
+      ],
+      "mse1_units": "1, 3, 4  (Unit 2 preprocessing NOT included)",
       "topics": [
-        {"key": "data_preprocessing", "name": "Data Preprocessing", "aliases": ["preprocessing", "data cleaning", "missing value", "normalization", "discretization", "data transformation", "outlier", "noise"], "subtopics": []},
-        {"key": "data_warehouse", "name": "Data Warehousing", "aliases": ["warehouse", "olap", "oltp", "star schema", "snowflake schema", "fact table", "dimension table", "data cube", "etl", "roll up", "drill down"], "subtopics": []},
         {
-          "key": "association_rules", "name": "Association Rule Mining",
-          "aliases": ["association rule", "market basket", "frequent itemset", "support and confidence", "lift"],
+          "key": "dm_intro",
+          "name": "Data Mining & KDD",
+          "aliases": [
+            "kdd",
+            "knowledge discovery",
+            "kdd process",
+            "data mining functionalities",
+            "task primitives",
+            "major issues",
+            "data mining application",
+            "data mining"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "dm_statistics",
+          "name": "Statistical Measures",
+          "aliases": [
+            "central tendency",
+            "mean median mode",
+            "dispersion",
+            "range variance",
+            "standard deviation",
+            "data distribution"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "association_rules",
+          "name": "Association Rule Mining",
+          "aliases": [
+            "association rule",
+            "market basket",
+            "market basket analysis",
+            "frequent itemset",
+            "closed itemset",
+            "support and confidence",
+            "lift",
+            "correlation analysis",
+            "pattern evaluation"
+          ],
+          "mse1": true,
           "subtopics": [
-            {"key": "apriori", "name": "Apriori Algorithm", "aliases": ["apriori", "candidate generation"]},
-            {"key": "fp_growth", "name": "FP-Growth", "aliases": ["fp growth", "fp tree", "frequent pattern tree"]}
+            {
+              "key": "apriori",
+              "name": "Apriori Algorithm",
+              "aliases": [
+                "apriori",
+                "candidate generation",
+                "candidate itemset"
+              ]
+            },
+            {
+              "key": "fp_growth",
+              "name": "FP-Growth",
+              "aliases": [
+                "fp growth",
+                "fp tree",
+                "frequent pattern tree"
+              ]
+            }
           ]
         },
         {
-          "key": "classification_dm", "name": "Classification",
-          "aliases": ["classifier", "decision tree", "id3", "c4.5", "cart", "information gain", "gini index", "entropy", "naive bayes", "bayesian classification", "rule based classifier"],
+          "key": "classification_dm",
+          "name": "Classification & Prediction",
+          "aliases": [
+            "classifier",
+            "classification vs prediction",
+            "decision tree",
+            "id3",
+            "c4.5",
+            "cart",
+            "information gain",
+            "gini index",
+            "entropy",
+            "naive bayes",
+            "bayes classification",
+            "rule based classification",
+            "distance based algorithm",
+            "statistical based algorithm",
+            "decision tree induction",
+            "classification",
+            "classify"
+          ],
+          "mse1": true,
           "subtopics": []
         },
         {
-          "key": "clustering", "name": "Clustering",
-          "aliases": ["cluster", "kmeans", "k means", "k medoids", "hierarchical clustering", "agglomerative", "divisive", "dbscan", "density based", "silhouette"],
+          "key": "dm_evaluation",
+          "name": "Model Evaluation",
+          "aliases": [
+            "confusion matrix",
+            "precision",
+            "recall",
+            "f1 score",
+            "accuracy",
+            "roc",
+            "auc",
+            "cross validation",
+            "model selection",
+            "classification accuracy"
+          ],
+          "mse1": true,
           "subtopics": []
         },
-        {"key": "outlier_detection", "name": "Outlier Detection", "aliases": ["anomaly detection", "outlier analysis"], "subtopics": []},
-        {"key": "dm_evaluation", "name": "Evaluation Metrics", "aliases": ["confusion matrix", "precision", "recall", "f1 score", "accuracy", "roc", "auc", "cross validation"], "subtopics": []}
+        {
+          "key": "data_preprocessing",
+          "name": "Data Preprocessing",
+          "aliases": [
+            "preprocessing",
+            "data cleaning",
+            "data integration",
+            "data reduction",
+            "data transformation",
+            "discretization",
+            "missing value",
+            "noisy data",
+            "binning",
+            "min max",
+            "z score",
+            "preprocess",
+            "pre processing",
+            "pre process",
+            "data preprocessing"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "clustering_dm",
+          "name": "Cluster Analysis",
+          "aliases": [
+            "kmeans",
+            "k means",
+            "k medoids",
+            "hierarchical clustering",
+            "agglomerative",
+            "divisive",
+            "dbscan",
+            "density based",
+            "clustering",
+            "cluster analysis",
+            "cluster"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "advanced_dm",
+          "name": "Advanced Mining",
+          "aliases": [
+            "web mining",
+            "spatial mining",
+            "temporal mining",
+            "stream mining",
+            "text mining",
+            "hyperparameter tuning",
+            "explainable ai",
+            "xai"
+          ],
+          "mse1": false,
+          "subtopics": []
+        }
       ]
     },
-
     {
       "key": "machine_learning",
       "name": "Machine Learning",
-      "aliases": ["ml", "machine learning"],
+      "aliases": [
+        "ml",
+        "machine learning"
+      ],
+      "mse1_units": "1, 2, 5  (Units 3 and 4 NOT included)",
       "topics": [
         {
-          "key": "supervised_learning", "name": "Supervised Learning",
-          "aliases": ["supervised", "labelled data", "labeled data"],
-          "subtopics": [
-            {"key": "linear_regression", "name": "Linear Regression", "aliases": ["regression", "least squares", "ols", "cost function", "mse"]},
-            {"key": "logistic_regression", "name": "Logistic Regression", "aliases": ["sigmoid", "log loss", "binary classification"]},
-            {"key": "svm", "name": "SVM", "aliases": ["support vector machine", "hyperplane", "kernel trick", "margin"]},
-            {"key": "knn", "name": "KNN", "aliases": ["k nearest neighbour", "k nearest neighbor", "nearest neighbour"]},
-            {"key": "ensemble", "name": "Ensemble Methods", "aliases": ["random forest", "bagging", "boosting", "adaboost", "gradient boosting", "xgboost"]}
-          ]
-        },
-        {"key": "unsupervised_learning", "name": "Unsupervised Learning", "aliases": ["unsupervised", "pca", "principal component", "dimensionality reduction", "lda"], "subtopics": []},
-        {
-          "key": "neural_networks", "name": "Neural Networks",
-          "aliases": ["neural network", "ann", "perceptron", "backpropagation", "back propagation", "activation function", "relu", "sigmoid function", "softmax", "epoch", "deep learning", "cnn", "rnn", "lstm", "transformer"],
+          "key": "ml_intro",
+          "name": "ML Fundamentals",
+          "aliases": [
+            "what is learning",
+            "ai vs ml",
+            "ml vs dl",
+            "traditional programming",
+            "types of machine learning",
+            "supervised",
+            "unsupervised",
+            "reinforcement learning",
+            "types of problems"
+          ],
+          "mse1": true,
           "subtopics": []
         },
-        {"key": "model_tuning", "name": "Model Tuning", "aliases": ["overfitting", "underfitting", "bias variance", "regularization", "regularisation", "l1 l2", "dropout", "hyperparameter", "grid search", "learning rate"], "subtopics": []},
-        {"key": "gradient_descent", "name": "Gradient Descent", "aliases": ["sgd", "stochastic gradient", "optimizer", "adam optimizer", "convergence"], "subtopics": []},
-        {"key": "reinforcement_learning", "name": "Reinforcement Learning", "aliases": ["rl", "q learning", "reward function", "markov decision"], "subtopics": []}
+        {
+          "key": "ml_lifecycle",
+          "name": "ML Lifecycle & Datasets",
+          "aliases": [
+            "machine learning lifecycle",
+            "training set",
+            "testing set",
+            "train test split",
+            "dataset"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "model_tuning",
+          "name": "Overfitting & Bias-Variance",
+          "aliases": [
+            "overfitting",
+            "underfitting",
+            "bias variance",
+            "bias variance tradeoff",
+            "generalization"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "supervised_learning",
+          "name": "Supervised Learning - Regression",
+          "aliases": [
+            "simple linear regression",
+            "multiple linear regression",
+            "polynomial regression",
+            "cost function",
+            "mse",
+            "least squares",
+            "regression",
+            "supervised learning"
+          ],
+          "mse1": true,
+          "subtopics": [
+            {
+              "key": "linear_regression",
+              "name": "Linear Regression",
+              "aliases": [
+                "linear model",
+                "best fit line",
+                "slope intercept"
+              ]
+            },
+            {
+              "key": "gradient_descent",
+              "name": "Gradient Descent",
+              "aliases": [
+                "gradient descent algorithm",
+                "learning rate",
+                "convergence",
+                "sgd"
+              ]
+            }
+          ]
+        },
+        {
+          "key": "clustering_ml",
+          "name": "Clustering (Partitioning)",
+          "aliases": [
+            "k means",
+            "kmeans",
+            "k medoids",
+            "kmedoids",
+            "partitioning method",
+            "centroid",
+            "cluster",
+            "clustering"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "classification_ml",
+          "name": "Supervised Learning - Classification",
+          "aliases": [
+            "logistic regression",
+            "support vector machine",
+            "svm",
+            "knn",
+            "k nearest neighbour",
+            "pca",
+            "dimensionality reduction",
+            "sigmoid",
+            "classification"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "ensemble",
+          "name": "Ensemble & Evaluation",
+          "aliases": [
+            "bagging",
+            "boosting",
+            "random forest",
+            "xgboost",
+            "k fold",
+            "stratified"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "neural_networks",
+          "name": "Neural Networks",
+          "aliases": [
+            "neural network",
+            "perceptron",
+            "backpropagation",
+            "activation function",
+            "tensorflow"
+          ],
+          "mse1": false,
+          "subtopics": []
+        }
       ]
     },
-
     {
       "key": "python_ds",
       "name": "Python for Data Science",
-      "aliases": ["python", "pds", "python for ds"],
+      "aliases": [
+        "python",
+        "pds",
+        "python for ds"
+      ],
+      "mse1_units": "1, 2, 3, 4",
       "topics": [
-        {"key": "numpy", "name": "NumPy", "aliases": ["np", "ndarray", "array operations", "broadcasting", "vectorization"], "subtopics": []},
-        {"key": "pandas", "name": "Pandas", "aliases": ["pd", "dataframe", "series", "groupby", "merge dataframe", "pivot table", "iloc", "loc"], "subtopics": []},
-        {"key": "visualization", "name": "Data Visualisation", "aliases": ["matplotlib", "seaborn", "plotly", "histogram", "scatter plot", "box plot", "heatmap", "subplot"], "subtopics": []},
-        {"key": "python_basics", "name": "Python Fundamentals", "aliases": ["list comprehension", "dictionary", "lambda", "decorator", "generator", "iterator", "exception handling", "file handling", "oop python", "class python"], "subtopics": []},
-        {"key": "scikit_learn", "name": "Scikit-learn", "aliases": ["sklearn", "fit transform", "train test split", "pipeline sklearn"], "subtopics": []},
-        {"key": "statistics", "name": "Statistics", "aliases": ["mean median mode", "standard deviation", "variance", "correlation", "covariance", "hypothesis testing", "p value", "distribution", "probability"], "subtopics": []}
+        {
+          "key": "python_basics",
+          "name": "Python Basics & Operators",
+          "aliases": [
+            "variables",
+            "data types",
+            "arithmetic operator",
+            "assignment operator",
+            "comparison operator",
+            "logical operator",
+            "membership operator",
+            "identity operator",
+            "bitwise operator",
+            "list",
+            "tuple",
+            "set",
+            "dictionary",
+            "string operation"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "python_control_flow",
+          "name": "Control Flow & Functions",
+          "aliases": [
+            "if statement",
+            "if else",
+            "elif",
+            "boolean expression",
+            "while loop",
+            "for loop",
+            "nested loop",
+            "break",
+            "continue",
+            "pass",
+            "custom function",
+            "function definition",
+            "scope",
+            "module"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "file_handling",
+          "name": "File & Exception Handling",
+          "aliases": [
+            "file io",
+            "text file",
+            "csv file",
+            "binary file",
+            "exception handling",
+            "try except",
+            "mysql"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "data_science_intro",
+          "name": "Data Science Fundamentals",
+          "aliases": [
+            "data science life cycle",
+            "univariate",
+            "bivariate",
+            "multivariate",
+            "data analytics",
+            "measurement scale",
+            "data analysis"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "descriptive_statistics",
+          "name": "Descriptive Statistics",
+          "aliases": [
+            "central tendency",
+            "dispersion",
+            "variation",
+            "measure of location",
+            "shape and symmetry",
+            "skewness",
+            "kurtosis",
+            "descriptive statistics",
+            "statistics"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "numpy",
+          "name": "NumPy",
+          "aliases": [
+            "ndarray",
+            "broadcasting",
+            "vectorization",
+            "multidimensional array",
+            "numerical computing"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "scipy_stats",
+          "name": "SciPy Stats",
+          "aliases": [
+            "scipy",
+            "stats package"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "pandas",
+          "name": "Pandas",
+          "aliases": [
+            "dataframe",
+            "series",
+            "groupby",
+            "merge",
+            "pivot table",
+            "iloc",
+            "loc",
+            "data manipulation"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "visualization",
+          "name": "Data Visualisation",
+          "aliases": [
+            "matplotlib",
+            "seaborn",
+            "subplot",
+            "histogram",
+            "scatter plot",
+            "box plot",
+            "heatmap"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "inferential_statistics",
+          "name": "Inferential Statistics",
+          "aliases": [
+            "random variable",
+            "probability mass function",
+            "probability density function",
+            "binomial",
+            "poisson",
+            "normal distribution",
+            "central limit theorem",
+            "hypothesis testing"
+          ],
+          "mse1": false,
+          "subtopics": []
+        }
       ]
     },
-
     {
       "key": "web_development",
       "name": "Web Application Development",
-      "aliases": ["wad", "web dev", "webdev", "web development", "web application"],
+      "aliases": [
+        "wad",
+        "web dev",
+        "webdev",
+        "web development",
+        "web application"
+      ],
+      "mse1_units": "1, 2, 3, 4  (Node/React/deployment NOT included)",
       "topics": [
-        {"key": "frontend", "name": "Frontend", "aliases": ["html", "css", "javascript", "js", "dom", "flexbox", "grid css", "responsive design", "bootstrap", "tailwind"], "subtopics": []},
-        {"key": "frontend_frameworks", "name": "Frontend Frameworks", "aliases": ["react", "reactjs", "nextjs", "next js", "vue", "angular", "component", "props", "state", "hooks", "usestate", "useeffect"], "subtopics": []},
-        {"key": "backend", "name": "Backend", "aliases": ["server", "nodejs", "node js", "express", "flask", "django", "api", "rest api", "endpoint", "middleware", "routing backend"], "subtopics": []},
-        {"key": "web_database", "name": "Databases", "aliases": ["sql", "mysql", "postgres", "postgresql", "mongodb", "mongo", "crud", "orm", "query", "join", "schema design"], "subtopics": []},
-        {"key": "auth", "name": "Authentication", "aliases": ["authentication", "authorization", "jwt", "session", "cookie", "oauth", "login system", "hashing password", "bcrypt"], "subtopics": []},
-        {"key": "deployment", "name": "Deployment", "aliases": ["hosting", "deploy", "docker", "nginx", "aws", "vercel", "netlify", "ci cd", "cloudflare"], "subtopics": []},
-        {"key": "http_web", "name": "HTTP & Requests", "aliases": ["get request", "post request", "status code", "cors", "ajax", "fetch api", "axios"], "subtopics": []}
+        {
+          "key": "web_intro",
+          "name": "Web Technologies & Architecture",
+          "aliases": [
+            "client server architecture",
+            "client server",
+            "evolution of websites",
+            "static website",
+            "dynamic website",
+            "static vs dynamic",
+            "frontend backend",
+            "web technology"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "html_css",
+          "name": "HTML & CSS",
+          "aliases": [
+            "html",
+            "css",
+            "html tag",
+            "semantic element",
+            "div",
+            "form element",
+            "media element",
+            "selector",
+            "flexbox",
+            "positioning",
+            "margin padding",
+            "responsive design",
+            "media query",
+            "bootstrap",
+            "html and css"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "javascript_fundamentals",
+          "name": "JavaScript Fundamentals",
+          "aliases": [
+            "javascript",
+            "js",
+            "variable",
+            "datatype",
+            "operator",
+            "loop",
+            "function",
+            "array",
+            "object",
+            "javascript fundamentals"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "dom",
+          "name": "DOM Manipulation",
+          "aliases": [
+            "dom",
+            "dom manipulation",
+            "event handling",
+            "document object model",
+            "getelementbyid",
+            "queryselector"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "apis_http",
+          "name": "APIs & HTTP",
+          "aliases": [
+            "api",
+            "rest api",
+            "http request",
+            "http response",
+            "status code",
+            "query parameter",
+            "request body",
+            "crud",
+            "json",
+            "xml",
+            "fetch api",
+            "public api"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "backend_node",
+          "name": "Backend with Node.js",
+          "aliases": [
+            "nodejs",
+            "node js",
+            "express",
+            "npm",
+            "middleware",
+            "routing",
+            "postman",
+            "authentication"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "react",
+          "name": "React.js",
+          "aliases": [
+            "react",
+            "jsx",
+            "component",
+            "props",
+            "state",
+            "usestate",
+            "useeffect",
+            "hook",
+            "axios",
+            "cors"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "deployment_web",
+          "name": "Deployment",
+          "aliases": [
+            "hosting",
+            "domain",
+            "seo",
+            "captcha",
+            "cloud concept"
+          ],
+          "mse1": false,
+          "subtopics": []
+        }
       ]
     },
-
     {
       "key": "ohs_management",
       "name": "Occupational Health & Safety Management",
-      "aliases": ["ohs", "health and safety", "safety management", "occupational health"],
+      "aliases": [
+        "ohs",
+        "ohsm",
+        "health and safety",
+        "safety management",
+        "occupational health"
+      ],
+      "mse1_units": "1, 2, 3, 4",
       "topics": [
-        {"key": "hazard_identification", "name": "Hazard Identification", "aliases": ["hazard", "hira", "risk assessment", "risk matrix", "job safety analysis", "jsa"], "subtopics": []},
-        {"key": "safety_legislation", "name": "Safety Legislation", "aliases": ["factories act", "osha", "iso 45001", "compliance", "safety regulation", "statutory"], "subtopics": []},
-        {"key": "ppe", "name": "Personal Protective Equipment", "aliases": ["ppe", "protective equipment", "safety gear", "helmet", "respirator"], "subtopics": []},
-        {"key": "accident_investigation", "name": "Accident Investigation", "aliases": ["accident", "incident report", "near miss", "root cause analysis", "rca", "fishbone"], "subtopics": []},
-        {"key": "occupational_hazards", "name": "Occupational Hazards", "aliases": ["ergonomics", "noise exposure", "chemical hazard", "biological hazard", "occupational disease", "fire safety"], "subtopics": []},
-        {"key": "safety_culture", "name": "Safety Management Systems", "aliases": ["safety audit", "safety policy", "safety training", "safety culture", "permit to work"], "subtopics": []}
+        {
+          "key": "occupational_hazards",
+          "name": "Occupational Health Hazards",
+          "aliases": [
+            "classification of hazard",
+            "occupational health hazard",
+            "routes of entry",
+            "toxic material",
+            "dangerous properties",
+            "chemical health effect",
+            "occupational disease",
+            "silicosis",
+            "asbestosis",
+            "hazard",
+            "hazards"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "hazard_control",
+          "name": "Hierarchy of Hazard Control",
+          "aliases": [
+            "hierarchy of hazard control",
+            "elimination",
+            "substitution",
+            "engineering control",
+            "administrative control",
+            "ppe",
+            "personal protective equipment"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "exposure_limits",
+          "name": "Exposure Limits & Sampling",
+          "aliases": [
+            "work environmental sampling",
+            "permissible exposure limit",
+            "pel",
+            "threshold limit value",
+            "tlv",
+            "lethal dose",
+            "lethal concentration",
+            "ld50"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "ergonomics",
+          "name": "Ergonomics",
+          "aliases": [
+            "ergonomic",
+            "constituents of ergonomics",
+            "noise",
+            "vibration",
+            "heat stress",
+            "illumination",
+            "radiation"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "safety_concept",
+          "name": "Concept & Philosophy of Safety",
+          "aliases": [
+            "concept of safety",
+            "nature of safety",
+            "philosophy of safety",
+            "safety terminology",
+            "total safety concept",
+            "safety psychology",
+            "accident causative factor",
+            "psychological factor"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "factories_act",
+          "name": "Factories Act 1948",
+          "aliases": [
+            "factories act",
+            "factory act",
+            "salient points",
+            "statutory",
+            "indian standard"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "accident_causes",
+          "name": "Accident Causes & Prevention",
+          "aliases": [
+            "causation",
+            "accident problem",
+            "reasons for prevention",
+            "factors impending safety",
+            "accident prevention",
+            "accident investigation",
+            "accident"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "electrical_safety",
+          "name": "Electrical Safety",
+          "aliases": [
+            "electricity and hazard",
+            "electrical parameter",
+            "effects of electrical parameters",
+            "electric shock",
+            "safety measures for electric works",
+            "electrical hazard",
+            "electrical safety"
+          ],
+          "mse1": true,
+          "subtopics": []
+        },
+        {
+          "key": "fire_explosion",
+          "name": "Fire & Explosion",
+          "aliases": [
+            "fire phenomena",
+            "extinguisher",
+            "fire prevention",
+            "explosion",
+            "fire awareness"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "risk_assessment",
+          "name": "Hazard & Risk Assessment",
+          "aliases": [
+            "hira",
+            "risk assessment",
+            "pha",
+            "hazan",
+            "fmea",
+            "hazop",
+            "fault tree",
+            "event tree",
+            "dow index",
+            "mond index"
+          ],
+          "mse1": false,
+          "subtopics": []
+        },
+        {
+          "key": "safety_management",
+          "name": "Safety Management Systems",
+          "aliases": [
+            "safety organization",
+            "safety audit",
+            "safety policy",
+            "permit to work",
+            "management principle"
+          ],
+          "mse1": false,
+          "subtopics": []
+        }
       ]
     }
   ]

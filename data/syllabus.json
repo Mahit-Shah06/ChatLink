@@ -11,61 +11,69 @@
     "'key' must stay stable once messages are captured against it.",
     "'name' and 'channel' can be renamed freely."
   ],
-
   "semesters": [
     {
       "id": "sem5",
       "name": "Semester 5",
       "category": "SEMESTER 5",
       "active": true,
-
       "subjects": [
         {
           "key": "computer_networks",
           "name": "Computer Networks",
           "channel": "computer-networks",
-          "syllabus": "**COMPUTER NETWORKS**\n\n**Unit 1 - Introduction & Physical Layer**\nNetwork types, topologies, OSI model, TCP/IP model, transmission media, circuit vs packet switching\n\n**Unit 2 - Data Link Layer**\nFraming, error detection & correction (CRC, Hamming), flow control, sliding window, ARQ protocols, MAC, CSMA/CD, Ethernet\n\n**Unit 3 - Network Layer**\nIPv4/IPv6 addressing, subnetting, CIDR, NAT, routing algorithms (distance vector, link state), RIP, OSPF, BGP\n\n**Unit 4 - Transport Layer**\nTCP vs UDP, three-way handshake, flow control, congestion control (slow start, AIMD)\n\n**Unit 5 - Application Layer & Security**\nDNS, HTTP/HTTPS, SMTP, FTP, firewalls, TLS/SSL, VPN"
+          "syllabus": "**COMPUTER NETWORKS** (BE05000171)\n\n__MSE-1 covers Units 1, 2, 3 — 40%__\n\n**Unit 1 — Introduction to Computer Networks**\nNetwork models, OSI model, TCP/IP model, network topologies, transmission media, switching techniques, LAN technologies, IPv4 addressing, IPv6 addressing\n\n**Unit 2 — Data Link and Network Layer**\nError detection and correction, framing, MAC protocols, routing algorithms, RIP, OSPF, switching concepts, BGP, subnetting, CIDR, VLANs\n\n**Unit 3 — Transport and Application Layer**\nTCP, UDP, congestion control, flow control, DNS, HTTP/HTTPS, FTP, email protocols\n\n*Not in MSE-1: wireless/IoT/cloud, network security, SDN*"
         },
         {
           "key": "data_mining",
           "name": "Data Mining Techniques",
           "channel": "data-mining",
-          "syllabus": "**DATA MINING TECHNIQUES**\n\n**Unit 1 - Introduction & Preprocessing**\nKDD process, data types, data cleaning, missing values, normalization, discretization, outlier handling\n\n**Unit 2 - Data Warehousing**\nOLAP vs OLTP, star & snowflake schema, fact and dimension tables, data cube, roll-up/drill-down, ETL\n\n**Unit 3 - Association Rule Mining**\nFrequent itemsets, support & confidence, lift, Apriori algorithm, FP-Growth, FP-tree\n\n**Unit 4 - Classification**\nDecision trees (ID3, C4.5, CART), information gain, Gini index, entropy, Naive Bayes, rule-based classifiers\n\n**Unit 5 - Clustering & Evaluation**\nK-means, K-medoids, hierarchical clustering, DBSCAN, outlier detection, confusion matrix, precision/recall/F1"
+          "syllabus": "**DATA MINING TECHNIQUES** (BE05000181)\n\n__MSE-1 covers Units 1, 3, 4 — 40%__\n⚠️ Unit 2 (preprocessing) is NOT in MSE-1\n\n**Unit 1 — Introduction**\nData mining, KDD process, data mining functionalities, applications, task primitives, major issues. Statistical measures: central tendency (mean, median, mode), dispersion (range, variance, standard deviation), data distribution concepts\n\n**Unit 3 — Frequent Patterns & Associations**\nMarket basket analysis, frequent itemsets, closed itemsets, association rules, frequent itemset mining methods, mining various kinds of association rules\n\n**Unit 4 — Classification and Prediction**\nClassification vs prediction, issues, statistical-based algorithms, distance-based algorithms, decision tree induction, Bayes classification, rule-based classification, model evaluation and selection, techniques to improve accuracy"
         },
         {
           "key": "machine_learning",
           "name": "Machine Learning",
           "channel": "machine-learning",
-          "syllabus": "**MACHINE LEARNING**\n\n**Unit 1 - Foundations**\nSupervised vs unsupervised vs reinforcement learning, train/test split, cross validation, bias-variance tradeoff\n\n**Unit 2 - Regression**\nLinear regression, least squares, cost function, MSE, gradient descent, logistic regression, sigmoid\n\n**Unit 3 - Classification**\nSVM, hyperplanes, kernel trick, KNN, decision trees, ensembles (random forest, bagging, boosting, AdaBoost)\n\n**Unit 4 - Unsupervised Learning**\nClustering, PCA, dimensionality reduction, LDA\n\n**Unit 5 - Neural Networks**\nPerceptron, activation functions, backpropagation, overfitting, regularization, dropout, intro to CNN/RNN"
+          "syllabus": "**MACHINE LEARNING** (BE05000211)\n\n__MSE-1 covers Units 1, 2, 5 — 40%__\n⚠️ Units 3 and 4 are NOT in MSE-1\n\n**Unit 1 — Introduction**\nWhat is learning, machine learning, comparison with traditional programming, AI vs ML vs DL, ML lifecycle, types of ML (supervised, unsupervised, reinforcement), types of problems (regression, classification, clustering), dataset: training/testing, underfitting, overfitting, bias-variance tradeoff\n\n**Unit 2 — Supervised Learning: Regression**\nSimple linear regression, multiple linear regression, gradient descent algorithm, polynomial regression, cost function\n\n**Unit 5 — Unsupervised Learning**\nClustering algorithms, partitioning methods (k-means and k-medoids)\n\n*Not in MSE-1: logistic regression, SVM, KNN, PCA, ensembles, neural networks*"
         },
         {
           "key": "ohs_management",
           "name": "Occupational Health & Safety Management",
           "channel": "health-safety",
-          "syllabus": "**OCCUPATIONAL HEALTH & SAFETY MANAGEMENT**\n\n**Unit 1 - Introduction**\nConcepts of health, safety and welfare, importance of OHS, safety terminology\n\n**Unit 2 - Hazard Identification & Risk Assessment**\nHazard types, HIRA, risk matrix, job safety analysis (JSA), hierarchy of controls\n\n**Unit 3 - Legislation & Standards**\nFactories Act, OSHA, ISO 45001, statutory compliance, duties of employer and employee\n\n**Unit 4 - Occupational Hazards**\nPhysical, chemical, biological and ergonomic hazards, noise exposure, occupational diseases, fire safety, PPE\n\n**Unit 5 - Safety Management Systems**\nSafety policy, safety audits, permit-to-work, accident investigation, root cause analysis, safety culture"
+          "syllabus": "**OCCUPATIONAL HEALTH & SAFETY MANAGEMENT** (BE05000451)\n\n__MSE-1 covers Units 1, 2, 3, 4 — 40%__\n\n**Unit 1 — Occupational Health**\nClassification of occupational health hazards, routes of entry of toxic material into the body, dangerous properties of chemicals and their health effects, hierarchy of hazard control (elimination, substitution, engineering control, administrative control, PPE), work environmental sampling and types, permissible exposure limits, threshold limit value, lethal dose and lethal concentration, ergonomics and its constituents\n\n**Unit 2 — Concept, Philosophy & Psychology of Safety**\nConcept of safety, nature of the concept, philosophy of safety, safety terminology, total safety concept, safety psychology, accident causative factors, general psychological factors, salient points of the Factories Act 1948\n\n**Unit 3 — Accident Causes and Prevention**\nCausation, accident problem, reasons for prevention, factors impending safety, accident prevention\n\n**Unit 4 — Electrical Safety**\nElectricity and hazards, Indian standards, effects of electrical parameters on the human body, safety measures for electric works"
         },
         {
           "key": "python_ds",
           "name": "Python for Data Science",
           "channel": "python-data-science",
-          "syllabus": "**PYTHON FOR DATA SCIENCE**\n\n**Unit 1 - Python Fundamentals**\nData types, control flow, functions, list comprehensions, dictionaries, lambda, exception handling, file handling, OOP basics\n\n**Unit 2 - NumPy**\nndarray, indexing & slicing, broadcasting, vectorized operations, linear algebra functions\n\n**Unit 3 - Pandas**\nSeries and DataFrame, loc vs iloc, filtering, groupby, merge & join, pivot tables, handling missing data\n\n**Unit 4 - Visualisation**\nMatplotlib basics, subplots, Seaborn, histograms, scatter plots, box plots, heatmaps\n\n**Unit 5 - Statistics & Modelling**\nDescriptive statistics, distributions, correlation, hypothesis testing, p-values, intro to scikit-learn"
+          "syllabus": "**PYTHON FOR DATA SCIENCE** (BE05000231)\n\n__MSE-1 covers Units 1, 2, 3, 4 — 40%__\n\n**Unit 1 — Introduction, Data Types & Operators**\nFeatures and history of Python, variables and data types, operators (arithmetic, assignment, comparison, logical, membership, identity, bitwise), list, tuple, set, dictionary, string operations.\nDecision making, loops and functions: if/elif/else, boolean expressions, while, for, nested loops, break, continue, pass, custom functions\n\n**Unit 2 — File & Exception Handling**\nFile I/O, text files, CSV files, binary files, exception handling, Python MySQL basics\n\n**Unit 3 — Data Science and Descriptive Statistics**\nUnderstanding data and its types, data science life cycle, data analysis (univariate, bivariate, multivariate), data measurement scale, descriptive statistics (central tendency, dispersion, location, shape and symmetry)\n\n**Unit 4 — Exploring Python Libraries**\nSciPy stats package, NumPy multidimensional arrays"
         },
         {
           "key": "web_development",
           "name": "Web Application Development",
           "channel": "web-dev",
-          "syllabus": "**WEB APPLICATION DEVELOPMENT**\n\n**Unit 1 - Frontend Basics**\nHTML5 semantics, CSS (box model, flexbox, grid), responsive design, JavaScript fundamentals, DOM manipulation\n\n**Unit 2 - Modern Frontend**\nES6+, async/await, fetch API, component-based UI, React (components, props, state, hooks)\n\n**Unit 3 - Backend**\nClient-server model, HTTP methods, status codes, REST API design, Node.js/Express, middleware, routing\n\n**Unit 4 - Databases**\nSQL basics, CRUD, joins, schema design, NoSQL/MongoDB, ORMs\n\n**Unit 5 - Security & Deployment**\nAuthentication vs authorization, sessions, cookies, JWT, password hashing, CORS, hosting and deployment"
+          "syllabus": "**WEB APPLICATION DEVELOPMENT** (BE05000281)\n\n__MSE-1 covers Units 1, 2, 3, 4 — 40%__\n\n**Unit 1 — Introduction to Web Technologies**\nWeb technologies, evolution of websites, client-server architecture, frontend/backend/database overview, static vs dynamic websites\n\n**Unit 2 — HTML & CSS Fundamentals**\nHTML structure, basic tags, tables, forms, media elements, div and semantic elements, CSS selectors and styling, colors, backgrounds, fonts, margin, padding, borders, flexbox layout, positioning, responsive design basics\n\n**Unit 3 — JavaScript Fundamentals**\nVariables and datatypes, operators and conditions, loops and functions, arrays and objects, DOM manipulation\n\n**Unit 4 — APIs & HTTP Communication**\nIntroduction to APIs, client-server communication, HTTP request and response, status codes, query parameters, request body, CRUD operations, JSON and XML, integrating public APIs\n\n*Not in MSE-1: Node.js, React.js, deployment*"
         }
       ],
-
       "exams": [
-        { "key": null, "name": "Mid Sem 1", "channel": "midsem-1",
-          "syllabus": "**MID SEM 1**\n\nPrep notes, doubts and progress for this exam.\nEverything is timestamped, so analytics can slice this period on its own." },
-        { "key": null, "name": "Mid Sem 2", "channel": "midsem-2" },
-        { "key": null, "name": "Final Exam", "channel": "final-exam" }
+        {
+          "key": null,
+          "name": "Mid Sem 1",
+          "channel": "midsem-1",
+          "syllabus": "**MID SEM 1**\n\nPrep notes, doubts and progress for this exam.\nEverything is timestamped, so analytics can slice this period on its own."
+        },
+        {
+          "key": null,
+          "name": "Mid Sem 2",
+          "channel": "midsem-2"
+        },
+        {
+          "key": null,
+          "name": "Final Exam",
+          "channel": "final-exam"
+        }
       ]
     },
-
     {
       "id": "sem6",
       "name": "Semester 6",
@@ -73,9 +81,21 @@
       "active": false,
       "subjects": [],
       "exams": [
-        { "key": null, "name": "Mid Sem 1", "channel": "s6-midsem-1" },
-        { "key": null, "name": "Mid Sem 2", "channel": "s6-midsem-2" },
-        { "key": null, "name": "Final Exam", "channel": "s6-final-exam" }
+        {
+          "key": null,
+          "name": "Mid Sem 1",
+          "channel": "s6-midsem-1"
+        },
+        {
+          "key": null,
+          "name": "Mid Sem 2",
+          "channel": "s6-midsem-2"
+        },
+        {
+          "key": null,
+          "name": "Final Exam",
+          "channel": "s6-final-exam"
+        }
       ]
     }
   ]

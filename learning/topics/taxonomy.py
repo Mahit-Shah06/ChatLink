@@ -29,6 +29,8 @@ class TaxonomyNode:
     aliases: List[str] = field(default_factory=list)
     parent_key: Optional[str] = None
     subject_key: Optional[str] = None
+    #: In scope for Mid Sem Exam 1. Subtopics inherit this from their parent.
+    mse1: bool = False
 
 
 @dataclass
@@ -38,6 +40,11 @@ class Taxonomy:
     edges: List[Tuple[str, str, Relation]]
     #: normalised alias -> node keys. Ambiguity is allowed, resolved by context.
     alias_index: Dict[str, List[str]]
+    #: subject key -> the unit numbers MSE-1 covers, as printed on the syllabus
+    mse1_units: Dict[str, str] = field(default_factory=dict)
+
+    def mse1_keys(self) -> List[str]:
+        return [k for k, n in self.nodes.items() if n.mse1]
 
     def node(self, key: str) -> Optional[TaxonomyNode]:
         return self.nodes.get(key)
@@ -55,12 +62,13 @@ def load_taxonomy(path: Path | str | None = None) -> Taxonomy:
     p = Path(path) if path else DEFAULT_TAXONOMY_PATH
     if not p.exists():
         log.warning("no taxonomy at %s", p)
-        return Taxonomy("0", {}, [], {})
+        return Taxonomy("0", {}, [], {}, {})
 
     raw = json.loads(p.read_text(encoding="utf-8"))
     nodes: Dict[str, TaxonomyNode] = {}
     edges: List[Tuple[str, str, Relation]] = []
     alias_index: Dict[str, List[str]] = {}
+    mse1_units: Dict[str, str] = {}
 
     def index(node: TaxonomyNode) -> None:
         for alias in [node.name] + node.aliases:
@@ -73,13 +81,17 @@ def load_taxonomy(path: Path | str | None = None) -> Taxonomy:
 
     for subj in raw.get("subjects", []):
         s = TaxonomyNode(subj["key"], subj["name"], NodeKind.SUBJECT,
-                         list(subj.get("aliases", [])), subject_key=subj["key"])
+                         list(subj.get("aliases", [])), subject_key=subj["key"],
+                         mse1=bool(subj.get("mse1_units")))
         nodes[s.key] = s
         index(s)
+        if subj.get("mse1_units"):
+            mse1_units[s.key] = subj["mse1_units"]
 
         for topic in subj.get("topics", []):
             t = TaxonomyNode(topic["key"], topic["name"], NodeKind.TOPIC,
-                             list(topic.get("aliases", [])), s.key, s.key)
+                             list(topic.get("aliases", [])), s.key, s.key,
+                             mse1=bool(topic.get("mse1")))
             nodes[t.key] = t
             index(t)
             edges.append((s.key, t.key, Relation.CONTAINS))
@@ -90,8 +102,10 @@ def load_taxonomy(path: Path | str | None = None) -> Taxonomy:
                 edges.append((pre, t.key, Relation.PREREQ_OF))
 
             for sub in topic.get("subtopics", []):
+                # A subtopic is examinable exactly when its parent topic is.
                 st = TaxonomyNode(sub["key"], sub["name"], NodeKind.SUBTOPIC,
-                                  list(sub.get("aliases", [])), t.key, s.key)
+                                  list(sub.get("aliases", [])), t.key, s.key,
+                                  mse1=t.mse1)
                 nodes[st.key] = st
                 index(st)
                 edges.append((t.key, st.key, Relation.CONTAINS))
@@ -99,6 +113,7 @@ def load_taxonomy(path: Path | str | None = None) -> Taxonomy:
     # drop edges pointing at keys that don't exist — a typo shouldn't crash boot
     edges = [e for e in edges if e[0] in nodes and e[1] in nodes]
 
-    log.info("taxonomy %s: %d nodes, %d aliases",
-             raw.get("version", "0"), len(nodes), len(alias_index))
-    return Taxonomy(str(raw.get("version", "0")), nodes, edges, alias_index)
+    in_scope = sum(1 for n in nodes.values() if n.mse1)
+    log.info("taxonomy %s: %d nodes (%d in MSE-1), %d aliases",
+             raw.get("version", "0"), len(nodes), in_scope, len(alias_index))
+    return Taxonomy(str(raw.get("version", "0")), nodes, edges, alias_index, mse1_units)

@@ -384,21 +384,86 @@ class LearningCommands(commands.Cog):
         await confirm.edit(embed=embed)
 
     # ------------------------------------------------------------ analytics
+    @learn.command(name="mse1")
+    async def learn_mse1(self, ctx, subject: str = None):
+        """Coverage against the MSE-1 syllabus — what you've touched, what you haven't."""
+        tax = self.engine.taxonomy
+        stats = {t["node_key"]: t for t in
+                 await asyncio.to_thread(self.engine.repo.topic_stats, None, 500)}
+
+        subjects = [k for k in tax.mse1_units]
+        if subject:
+            subjects = [k for k in subjects if subject.lower() in k.lower()]
+            if not subjects:
+                return await ctx.send(
+                    "Unknown subject. Try: " + ", ".join(f"`{k}`" for k in tax.mse1_units))
+
+        embed = discord.Embed(
+            title="📋 MSE-1 coverage",
+            description="Only topics on the mid-sem syllabus. Everything else is hidden.",
+            color=0x5865F2)
+
+        total_in, total_done = 0, 0
+        for subject_key in subjects:
+            in_scope = [n for n in tax.nodes.values()
+                        if n.subject_key == subject_key and n.mse1
+                        and n.kind.value == "topic"]
+            if not in_scope:
+                continue
+
+            touched, untouched = [], []
+            for node in in_scope:
+                st = stats.get(node.key)
+                if st and st["mentions"]:
+                    flag = " ⚠️" if st["open_ratio"] > 0.5 else ""
+                    touched.append(f"{node.name}{flag}")
+                else:
+                    untouched.append(node.name)
+
+            total_in += len(in_scope)
+            total_done += len(touched)
+            pct = round(100 * len(touched) / len(in_scope))
+
+            bar = "█" * (pct // 10) + "░" * (10 - pct // 10)
+            value = f"`{bar}` {pct}%  ·  units {tax.mse1_units[subject_key]}\n"
+            if untouched:
+                shown = untouched[:6]
+                more = len(untouched) - len(shown)
+                value += "**Not touched:** " + ", ".join(shown) + (f" +{more}" if more else "")
+            else:
+                value += "**All topics touched**"
+
+            embed.add_field(
+                name=subject_key.replace("_", " ").title(),
+                value=value, inline=False)
+
+        if total_in:
+            embed.set_footer(
+                text=f"{total_done}/{total_in} MSE-1 topics touched · "
+                     f"⚠️ = more questions than notes")
+        await ctx.send(embed=embed)
+
     @learn.command(name="weak")
     async def learn_weak(self, ctx):
         """Topics where you've asked questions but written few notes."""
-        rows = await asyncio.to_thread(self.engine.repo.weak_topics, 2, 10)
+        rows = await asyncio.to_thread(self.engine.repo.weak_topics, 2, 20)
         if not rows:
             return await ctx.send(
                 "Nothing flagged yet — that needs a few questions logged against "
                 "the same topic."
             )
 
+        # Topics on the exam come first; the rest still show, just below.
+        mse1 = set(self.engine.taxonomy.mse1_keys())
+        rows.sort(key=lambda t: (t["node_key"] not in mse1, -t["open_ratio"]))
+        rows = rows[:10]
+
         lines = []
         for t in rows:
             bar = "█" * int(t["open_ratio"] * 10) + "░" * (10 - int(t["open_ratio"] * 10))
+            tag = " `MSE-1`" if t["node_key"] in mse1 else ""
             lines.append(
-                f"`{bar}` **{t['name']}**\n"
+                f"`{bar}` **{t['name']}**{tag}\n"
                 f"　{t['questions']}❓ · {t['notes']}📝 · {t['revisions']}🔁"
             )
 
