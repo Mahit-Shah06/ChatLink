@@ -70,7 +70,9 @@ systemctl --user daemon-reload
 # ------------------------------------------------------------- ldb launcher
 mkdir -p "$HOME/.local/bin"
 install -m 755 "$REPO/deploy/ldb" "$HOME/.local/bin/ldb"
-echo "  installed ldb -> ~/.local/bin/ldb"
+install -m 755 "$REPO/deploy/clhelp" "$HOME/.local/bin/clhelp"
+echo "  installed ldb    -> ~/.local/bin/ldb"
+echo "  installed clhelp -> ~/.local/bin/clhelp"
 
 if ! echo "$PATH" | tr ':' '\n' | grep -qx "$HOME/.local/bin"; then
   echo "  NOTE: ~/.local/bin is not on your PATH. Add this to ~/.bashrc:"
@@ -135,6 +137,9 @@ Everything runs under one target, so this is the whole interface:
   journalctl --user -u chatlink-bot -f        live bot logs
   journalctl --user -u chatlink-dashboard -f  live dashboard logs
   systemctl --user list-timers                when the backup next runs
+
+  clhelp                                      every command, grouped
+  clhelp check                                live status of everything
 
   Dashboard: http://127.0.0.1:8787
 

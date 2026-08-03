@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+#
+# clhelp — every ChatLink command in one place.
+#
+#   clhelp           the full reference
+#   clhelp check     live status of services, database and dashboard
+#   clhelp <word>    only the sections matching that word
+#
+# Installed to ~/.local/bin/clhelp by deploy/install-autostart.sh.
+
+set -uo pipefail
+
+REPO="${CHATLINK_REPO:-$(cd "$(dirname "$(readlink -f "$0")")/.." 2>/dev/null && pwd)}"
+PORT="${LEARNING_API_PORT:-8787}"
+
+# Colours, but only when writing to a terminal — piping to grep or less
+# shouldn't produce escape codes.
+if [ -t 1 ]; then
+  B=$'\e[1m'; D=$'\e[2m'; G=$'\e[32m'; Y=$'\e[33m'; R=$'\e[31m'; C=$'\e[36m'; N=$'\e[0m'
+else
+  B=""; D=""; G=""; Y=""; R=""; C=""; N=""
+fi
+
+h()  { printf '\n%s%s%s\n' "$B" "$1" "$N"; }
+# Long commands overflow the column, so they get their own line with the
+# description indented underneath rather than a ragged right edge.
+c() {
+  if [ ${#1} -gt 38 ]; then
+    printf '  %s%s%s\n      %s%s%s\n' "$C" "$1" "$N" "$D" "$2" "$N"
+  else
+    printf '  %s%-38s%s %s\n' "$C" "$1" "$N" "$2"
+  fi
+}
+n()  { printf '  %s%s%s\n' "$D" "$1" "$N"; }
+
+# --------------------------------------------------------------------- check
+if [ "${1:-}" = "check" ] || [ "${1:-}" = "--check" ]; then
+  printf '\n%sChatLink status%s\n' "$B" "$N"
+
+  for unit in chatlink-bot chatlink-dashboard; do
+    if systemctl --user is-active --quiet "$unit" 2>/dev/null; then
+      since=$(systemctl --user show "$unit" -p ActiveEnterTimestamp --value 2>/dev/null)
+      printf '  %s●%s %-22s running   %s%s%s\n' "$G" "$N" "$unit" "$D" "${since:-}" "$N"
+    else
+      printf '  %s●%s %-22s %sstopped%s\n' "$R" "$N" "$unit" "$R" "$N"
+    fi
+  done
+
+  if systemctl --user is-active --quiet chatlink-backup.timer 2>/dev/null; then
+    next=$(systemctl --user list-timers chatlink-backup.timer --no-pager 2>/dev/null | sed -n 2p | cut -c1-30)
+    printf '  %s●%s %-22s armed     %s%s%s\n' "$G" "$N" "chatlink-backup.timer" "$D" "${next:-}" "$N"
+  else
+    printf '  %s●%s %-22s %snot armed%s\n' "$Y" "$N" "chatlink-backup.timer" "$Y" "$N"
+  fi
+
+  if curl -sf -o /dev/null "http://127.0.0.1:${PORT}/api/summary" 2>/dev/null; then
+    stats=$(curl -s "http://127.0.0.1:${PORT}/api/summary")
+    msgs=$(printf '%s' "$stats" | grep -oP '"messages":\s*\K[0-9]+')
+    days=$(printf '%s' "$stats" | grep -oP '"active_days":\s*\K[0-9]+')
+    streak=$(printf '%s' "$stats" | grep -oP '"streak":\s*\K[0-9]+')
+    printf '\n  %s%s messages captured%s over %s day(s), streak %s\n' "$B" "${msgs:-0}" "$N" "${days:-0}" "${streak:-0}"
+    printf '  dashboard: %shttp://learning:%s%s\n' "$C" "$PORT" "$N"
+  else
+    printf '\n  %sdashboard not responding on port %s%s\n' "$R" "$PORT" "$N"
+  fi
+
+  db="$REPO/data/learning/learning.db"
+  [ -f "$db" ] && printf '  database:  %s (%s)\n' "$db" "$(du -h "$db" | cut -f1)"
+
+  backups=$(ls -1 "$REPO"/backups/*.tar.gz 2>/dev/null | wc -l)
+  printf '  backups:   %s archive(s)\n\n' "$backups"
+  exit 0
+fi
+
+# ---------------------------------------------------------------- reference
+FILTER="${1:-}"
+
+# Loose matching in both directions, so "logs" finds the "log" section and
+# "backup" finds "backups". Exact-substring matching is too brittle for
+# something you type from memory.
+show() {
+  [ -z "$FILTER" ] && return 0
+  local f keywords
+  f=$(printf '%s' "$FILTER" | tr '[:upper:]' '[:lower:]')
+  for keywords in $1; do
+    case "$keywords" in *"$f"*) return 0 ;; esac
+    case "$f" in *"$keywords"*) return 0 ;; esac
+  done
+  return 1
+}
+
+printf '\n%sChatLink — command reference%s  %s(clhelp check for live status)%s\n' \
+  "$B" "$N" "$D" "$N"
+
+if show "navigate cd repo folder cl"; then
+h "Getting there"
+c "cl"                              "cd into the ChatLink repo"
+c "source venv/bin/activate"        "activate the Python environment"
+n "Most commands below need the venv active."
+fi
+
+if show "dashboard ldb browser open web gui"; then
+h "Dashboard"
+c "ldb"                             "open the dashboard in your browser"
+c "ldb --status"                    "is it running, and on what URL"
+c "ldb --logs"                      "tail the dashboard log"
+c "ldb --restart"                   "restart just the dashboard"
+n "http://learning:${PORT}  (falls back to 127.0.0.1 if the hosts entry is gone)"
+fi
+
+if show "service systemd start stop restart boot autostart"; then
+h "Services"
+c "systemctl --user start chatlink.target"    "start everything"
+c "systemctl --user stop chatlink.target"     "stop everything"
+c "systemctl --user restart chatlink-bot"     "restart just the bot"
+c "clhelp check"                              "quick status of all of it"
+n "Both services start at boot. Adding a new one: copy"
+n "~/.config/systemd/user/example-myprogram.service.txt and enable it."
+fi
+
+if show "log journal debug error trace"; then
+h "Logs"
+c "journalctl --user -u chatlink-bot -f"      "live bot log"
+c "journalctl --user -u chatlink-bot -n 50 --no-pager"  "last 50 lines"
+c "journalctl --user -u chatlink-bot -p err"  "errors only"
+c "journalctl --user -u chatlink-bot --since '1 hour ago'"  "recent window"
+n "Set LOG_LEVEL=DEBUG in .env for per-message capture detail."
+n "--no-pager stops lines being truncated with '>'."
+fi
+
+if show "learning engine classify test try stats cli"; then
+h "Learning engine (CLI)"
+c "python3 -m learning.cli stats"             "summary: counts, labels, weak topics"
+c "python3 -m learning.cli try \"some text\""   "classify one message without saving"
+c "python3 -m learning.cli serve"             "run the dashboard in the foreground"
+c "python3 -m learning.cli reclassify"        "re-run classification over all history"
+n "'try' is how you check why something got labelled the way it did."
+fi
+
+if show "backup restore backfill history recover data safety"; then
+h "Data"
+c "python3 tools/backup.py"                   "back up the database now"
+c "python3 tools/backup.py --list"            "list backups"
+c "python3 tools/backup.py --restore <file>"  "restore from an archive"
+c "python3 tools/backfill.py --all"           "replay Discord history into the DB"
+c "python3 tools/backfill.py --all --dry-run" "count what would be imported"
+n "Backups run nightly at 23:00. Backfill is safe to re-run — it never duplicates."
+fi
+
+if show "discord bot command learn mse1 weak"; then
+h "Discord commands (typed in Discord, not here)"
+c "!learn"                          "overview of what's captured"
+c "!learn mse1"                     "coverage against the mid-sem syllabus"
+c "!learn weak"                     "topics with questions but no notes"
+c "!learn stale"                    "studied once, never revisited"
+c "!learn topics"                   "everything detected, ranked"
+c "!learn today"                    "what you logged today"
+c "!learn find <text>"              "search everything captured"
+c "!learn fix <id> <label>"         "correct a wrong label"
+c "!learn setup"                    "rebuild channels from data/syllabus.json"
+c "!learn cleanup"                  "remove channels no longer in the syllabus"
+n "Capture itself is passive — there is nothing to start or stop."
+fi
+
+if show "edit config syllabus taxonomy tune customise"; then
+h "Files worth knowing"
+c "data/syllabus.json"              "subjects, channels, pinned syllabus text"
+c "learning/topics/data/taxonomy.json"  "topics and aliases the matcher knows"
+c "learning/classifiers/rules.py"   "WEIGHTS dict — the classifier tuning surface"
+c ".env"                            "DISCORD_TOKEN, LOG_LEVEL, ports"
+n "After editing syllabus.json, run !learn setup in Discord."
+n "After editing taxonomy.json, restart the bot."
+fi
+
+if show "test pytest git commit push develop"; then
+h "Development"
+c "python3 -m pytest tests/ -q"     "run the test suite"
+c "git status"                      "what's changed"
+c "git add -A && git commit -m '…'" "commit"
+n "Work stays on the feature branch until you say otherwise."
+fi
+
+[ -n "$FILTER" ] && printf '\n%sFiltered by "%s". Run clhelp with no argument for everything.%s\n' \
+  "$D" "$FILTER" "$N"
+printf '\n'
