@@ -50,7 +50,14 @@ class SubjectEntry:
     context_kind: str
     context_value: str
     #: Posted and pinned inside the channel by !learn setup. Optional.
-    syllabus_text: str = ""
+    #: A list means several separate pinned messages — used by exam channels,
+    #: which carry one pin per subject rather than one giant wall of text.
+    syllabus_parts: List[str] = field(default_factory=list)
+
+    @property
+    def syllabus_text(self) -> str:
+        """First part only. Kept so older callers still work."""
+        return self.syllabus_parts[0] if self.syllabus_parts else ""
 
 
 @dataclass
@@ -74,6 +81,15 @@ class Syllabus:
             if entry.channel == channel_name:
                 return entry
         return None
+
+
+def _as_parts(value) -> List[str]:
+    """Accept a string or a list of strings from the JSON, always return a list."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return [str(v) for v in value if str(v).strip()]
 
 
 def _slug(text: str) -> str:
@@ -108,7 +124,7 @@ def load_syllabus(path: Path | str | None = None) -> Syllabus:
                 channel=subj.get("channel") or _slug(subj.get("key", "")),
                 context_kind="semester",
                 context_value=sem["id"],
-                syllabus_text=subj.get("syllabus", ""),
+                syllabus_parts=_as_parts(subj.get("syllabus")),
             ))
 
         # Exam channels live in the same category as the semester's subjects, so
@@ -120,7 +136,7 @@ def load_syllabus(path: Path | str | None = None) -> Syllabus:
                 channel=exam.get("channel") or _slug(exam.get("name", "")),
                 context_kind="exam",
                 context_value=sem["id"],
-                syllabus_text=exam.get("syllabus", ""),
+                syllabus_parts=_as_parts(exam.get("syllabus")),
             ))
 
         if entries:
@@ -138,7 +154,7 @@ def load_syllabus(path: Path | str | None = None) -> Syllabus:
                 channel=ch.get("channel") or _slug(ch.get("name", "")),
                 context_kind="exam",
                 context_value=exam["id"],
-                syllabus_text=ch.get("syllabus", ""),
+                syllabus_parts=_as_parts(ch.get("syllabus")),
             )
             for ch in exam.get("channels", [])
         ]

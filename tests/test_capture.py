@@ -470,3 +470,46 @@ def test_long_message_converted_to_attachment_is_flagged(engine):
     processed = engine.capture(m)
     assert processed is not None
     assert processed.classification.label == Label.RESOURCE
+
+
+# ------------------------------------------------------- multi-part syllabus
+def test_syllabus_accepts_a_single_string(tmp_path):
+    path = tmp_path / "syllabus.json"
+    path.write_text(json.dumps({"semesters": [{
+        "id": "sem5", "category": "S5",
+        "subjects": [{"key": "cn", "channel": "cn", "syllabus": "Unit 1 - OSI"}]}]}))
+    entry = load_syllabus(path).find("cn")
+    assert entry.syllabus_parts == ["Unit 1 - OSI"]
+    assert entry.syllabus_text == "Unit 1 - OSI"
+
+
+def test_syllabus_accepts_a_list_of_parts(tmp_path):
+    """Exam channels pin one message per subject rather than one wall of text."""
+    path = tmp_path / "syllabus.json"
+    path.write_text(json.dumps({"semesters": [{
+        "id": "sem5", "category": "S5", "subjects": [],
+        "exams": [{"key": None, "name": "Mid Sem 1", "channel": "midsem-1",
+                   "syllabus": ["scope for CN", "scope for DMT", "scope for ML"]}]}]}))
+    entry = load_syllabus(path).find("midsem-1")
+    assert len(entry.syllabus_parts) == 3
+    assert entry.syllabus_text == "scope for CN"
+
+
+def test_empty_syllabus_yields_no_parts(tmp_path):
+    path = tmp_path / "syllabus.json"
+    path.write_text(json.dumps({"semesters": [{
+        "id": "sem5", "category": "S5",
+        "subjects": [{"key": "cn", "channel": "cn"}]}]}))
+    assert load_syllabus(path).find("cn").syllabus_parts == []
+
+
+def test_every_pinned_part_fits_in_a_discord_message():
+    """Discord rejects anything over 2000 characters, and converting to an
+    attachment would lose the text entirely."""
+    from pathlib import Path as _P
+    real = _P(__file__).resolve().parent.parent / "data" / "syllabus.json"
+    if not real.exists():
+        pytest.skip("no syllabus.json in this checkout")
+    for entry in load_syllabus(real).all_entries():
+        for i, part in enumerate(entry.syllabus_parts):
+            assert len(part) + 3 < 1900, f"{entry.channel} part {i} is too long"

@@ -156,7 +156,7 @@ class LearningCommands(commands.Cog):
                             enabled=True, origin="syllabus"),
                         persist=False)
 
-                    if entry.syllabus_text:
+                    if getattr(entry, "syllabus_parts", None):
                         result = await self._pin_syllabus(channel, entry)
                         if result is True:
                             pinned += 1
@@ -224,43 +224,56 @@ class LearningCommands(commands.Cog):
         }
 
     async def _pin_syllabus(self, channel: discord.TextChannel, entry) -> bool | None:
-        """Post the syllabus and pin it. Edits its own previous pin if there is one.
+        """Post the syllabus and pin it, one pinned message per part.
 
-        Returns True if pinned, False on permission failure, None if nothing
-        needed doing. Discord caps a message at 2000 characters, so long
-        syllabi are split and only the first part is pinned.
+        Exam channels carry a part per subject, so they end up with several
+        pins rather than one unreadable wall. Re-running setup edits the
+        existing pins in place instead of posting duplicates.
+
+        Returns True if anything was pinned, False on a permission failure,
+        None if everything was already correct.
         """
-        header = f"📘 **{entry.name} — Syllabus**"
-        body = f"{header}\n\n{entry.syllabus_text}"
+        parts = getattr(entry, "syllabus_parts", None) or []
+        if not parts:
+            return None
 
         try:
             pins = await channel.pins()
         except discord.Forbidden:
             return False
 
-        mine = [m for m in pins if m.author.id == self.bot.user.id
-                and m.content.startswith("📘")]
+        # Our own pins, oldest first, so part N maps to pin N.
+        mine = sorted([m for m in pins if m.author.id == self.bot.user.id
+                       and m.content.startswith("\U0001F4D8")],
+                      key=lambda m: m.created_at)
 
-        chunks = self._split(body)
-
+        changed = False
         try:
-            if mine:
-                # Re-running setup shouldn't litter the channel with duplicates.
-                if mine[0].content.strip() == chunks[0].strip():
-                    return None
-                await mine[0].edit(content=chunks[0])
-                return True
+            for i, part in enumerate(parts):
+                body = f"\U0001F4D8 {part}" if not part.startswith("\U0001F4D8") else part
+                body = self._split(body)[0]      # a single part must fit one message
 
-            first = await channel.send(chunks[0])
-            await first.pin()
-            for extra in chunks[1:]:
-                await channel.send(extra)
-            return True
+                if i < len(mine):
+                    if mine[i].content.strip() != body.strip():
+                        await mine[i].edit(content=body)
+                        changed = True
+                else:
+                    sent = await channel.send(body)
+                    await sent.pin()
+                    changed = True
+
+            # Syllabus shrank since last run — drop the orphaned pins.
+            for extra in mine[len(parts):]:
+                await extra.delete()
+                changed = True
+
         except discord.Forbidden:
             return False
         except discord.HTTPException as exc:
             log.warning("pin failed in #%s: %s", channel.name, exc)
             return False
+
+        return changed or None
 
     @staticmethod
     def _split(text: str, limit: int = 1900) -> list[str]:
