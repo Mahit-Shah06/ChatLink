@@ -52,10 +52,37 @@ def extract_urls(text: str) -> List[str]:
     return URL_RE.findall(text or "")
 
 
+#: A fenced block that makes up most of the message is being used as a
+#: container for notes, not to show code. Below this share, it is treated as
+#: an illustration inside prose and dropped.
+CODE_BLOCK_KEEP_SHARE = 0.5
+
+FENCE_RE = re.compile(r"```[a-zA-Z0-9_+-]*\n?|```")
+
+
 def strip_noise(text: str) -> str:
-    """Remove URLs, code blocks, mentions and emoji before matching."""
-    text = CODE_BLOCK_RE.sub(" ", text or "")
-    text = INLINE_CODE_RE.sub(" ", text)
+    """Remove URLs, mentions and emoji before matching.
+
+    Fenced blocks are the awkward case. Stripping them entirely loses notes
+    written inside a block — a natural thing to do, since Discord renders them
+    monospaced and visually separate. Keeping them always means real code
+    ("for i in range(10)") matches topics like Dispersion via the word "range".
+
+    So: if the block is most of the message, the message *is* the note and the
+    fences are just formatting, so the contents are kept. If it is a minority,
+    it is code being shown inside prose and gets dropped.
+    """
+    raw = text or ""
+    blocks = CODE_BLOCK_RE.findall(raw)
+
+    if blocks:
+        block_len = sum(len(b) for b in blocks)
+        if block_len >= CODE_BLOCK_KEEP_SHARE * len(raw.strip()):
+            raw = FENCE_RE.sub(" ", raw)          # keep the words, drop the fences
+        else:
+            raw = CODE_BLOCK_RE.sub(" ", raw)     # genuine code sample, drop it
+
+    text = INLINE_CODE_RE.sub(" ", raw)
     text = URL_RE.sub(" ", text)
     text = MENTION_RE.sub(" ", text)
     return EMOJI_RE.sub(" ", text)

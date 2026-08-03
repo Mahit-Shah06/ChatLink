@@ -436,3 +436,37 @@ def test_analytics_endpoints_shape(engine):
     assert engine.repo.hourly_pattern()
     assert engine.repo.daily_activity(7)
     assert engine.repo.streak() >= 1
+
+
+# ------------------------------------------------- notes written in code blocks
+def test_note_inside_a_code_block_is_still_understood():
+    """Writing notes in a fenced block is natural — it renders monospaced and
+    stands out. Stripping the block would lose the whole message."""
+    text = "```\nClosed itemset: no immediate superset has the same support count.\n```"
+    topics, _ = ext.extract(IncomingMessage(content=text))
+    assert any(t.node_key == "association_rules" for t in topics)
+    assert label_of(text) == Label.NOTE
+
+
+def test_code_sample_inside_prose_is_still_ignored():
+    """A short block inside a longer message is code being shown, not a note.
+    Its contents must not leak into topic matching."""
+    text = ("tried looping over the rows manually\n"
+            "```python\nfor i in range(10):\n    print(i)\n```\n"
+            "but pandas groupby was much faster")
+    topics, _ = ext.extract(IncomingMessage(content=text))
+    names = {t.node_key for t in topics}
+    assert "pandas" in names
+    # "range" is an alias for a Data Mining statistics topic; it must not fire
+    assert "dm_statistics" not in names
+
+
+def test_long_message_converted_to_attachment_is_flagged(engine):
+    """Discord turns a >2000 character message into an empty message plus a
+    message.txt attachment. The text is gone, so all the engine can record is
+    that something was posted."""
+    m = msg("", ext="toolong", attachments=[
+        Attachment(filename="message.txt", content_type="text/plain", size_bytes=57000)])
+    processed = engine.capture(m)
+    assert processed is not None
+    assert processed.classification.label == Label.RESOURCE

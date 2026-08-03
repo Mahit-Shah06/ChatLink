@@ -26,6 +26,23 @@ from learning import Attachment, IncomingMessage, get_engine
 
 log = logging.getLogger("chatlink.learning")
 
+#: Silent confirmation that a message was understood, and as what. Random gets
+#: nothing — chit-chat shouldn't be decorated.
+LABEL_REACTIONS = {
+    "question": "\u2753",     # red question mark
+    "note": "\U0001F4DD",     # memo
+    "idea": "\U0001F4A1",     # light bulb
+    "progress": "\U0001F4C8", # chart increasing
+    "revision": "\U0001F501", # repeat
+    "resource": "\U0001F517", # link
+    "random": None,
+}
+
+#: A low-confidence auto label gets a thinking face instead, so you can spot
+#: the ones worth checking with !learn fix without opening the dashboard.
+UNSURE_REACTION = "\U0001F914"
+LOW_CONFIDENCE = 0.5
+
 
 class LearningCapture(commands.Cog):
     def __init__(self, bot):
@@ -80,16 +97,32 @@ class LearningCapture(commands.Cog):
             },
         )
 
-    async def _capture(self, message: discord.Message) -> bool:
+    async def _capture(self, message: discord.Message, react: bool = True) -> bool:
         ctx, thread_id = self._context(message)
         if ctx is None:
             return False
 
         incoming = self._to_incoming(message, ctx, thread_id)
-        message_id = await asyncio.to_thread(self.engine.capture, incoming)
-        if message_id:
-            log.debug("captured #%s message %s", ctx.label, message.id)
-        return message_id is not None
+        processed = await asyncio.to_thread(self.engine.capture, incoming)
+        if processed is None:
+            return False
+
+        label = processed.classification.label.value
+        confidence = processed.classification.confidence
+        topics = ", ".join(t.name for t in processed.topics[:3]) or "no topic"
+        log.debug("captured %s (%.2f) [%s] in #%s",
+                  label, confidence, topics, ctx.label)
+
+        if react:
+            emoji = (UNSURE_REACTION if confidence < LOW_CONFIDENCE
+                     else LABEL_REACTIONS.get(label))
+            if emoji:
+                try:
+                    await message.add_reaction(emoji)
+                except discord.HTTPException:
+                    pass  # missing permission or the message vanished
+
+        return True
 
     # -------------------------------------------------------------- events
     @commands.Cog.listener()
@@ -104,7 +137,8 @@ class LearningCapture(commands.Cog):
             return
         if before.content == after.content:
             return
-        await self._capture(after)
+        # Don't re-react on an edit; the reaction from the original is still there.
+        await self._capture(after, react=False)
 
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
